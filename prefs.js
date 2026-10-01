@@ -3,12 +3,7 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk?version=4.0';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-import {
-    deviceName,
-    discoverWeekly,
-    playlistUri,
-    soloistKey,
-} from './modules/model.js';
+import { deviceName, playlistShortcut, soloistKey } from './modules/model.js';
 import { lookupSecret, storeSecret, clearSecret } from './modules/secrets.js';
 import {
     SpotifyClient,
@@ -17,6 +12,7 @@ import {
 } from './modules/spotify.js';
 import { PlayerController } from './modules/player.js';
 import { importCredentials } from './modules/credentials.js';
+import { readShortcuts, writeShortcuts } from './modules/shortcuts.js';
 
 export default class QuickSpotPreferences extends ExtensionPreferences {
     _lookupSecret(kind, cancel) {
@@ -42,10 +38,6 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         let librarySaved = false;
         let accountChanged = false;
         let loggingIn = false;
-        let discoveryLoading = false;
-        let discoveryRequest = 0;
-        let discoveryDetail =
-            'Connect your Spotify library to find Discover Weekly.';
         const controls = [];
         const page = new Adw.PreferencesPage({
             title: 'Player',
@@ -310,7 +302,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             new Adw.ActionRow({
                 title: 'Quality is controlled in Spotify',
                 subtitle:
-                    'For Premium lossless playback, select this device in Spotify, then choose Change quality settings → Lossless. Soloist does not report the active stream quality.',
+                    'Select this device in Spotify to view or change its quality setting. Soloist does not expose the configured quality level or active bitrate to QuickSpot.',
             }),
         );
         page.add(quality);
@@ -322,7 +314,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         const account = new Adw.PreferencesGroup({
             title: 'Playlist library',
             description:
-                'Connect the same account you paired with the speaker to play Liked Songs, browse saved playlists, and find Discover Weekly.',
+                'Connect the same account you paired with the speaker to play Liked Songs and browse saved playlists. Manual playlist shortcuts work without this library login.',
         });
         const clientId = entry(account, 'Spotify client ID');
         const connection = new Adw.ActionRow({
@@ -345,7 +337,6 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             if (closed) return;
             librarySaved = true;
             changedAccount();
-            await refreshDiscovery();
             return 'Playlist library connected.';
         });
         const cancelLogin = new Gtk.Button({
@@ -362,10 +353,6 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 await clearSecret('tokens', cancel);
                 if (closed) return;
                 librarySaved = false;
-                discoveryRequest++;
-                discoveryLoading = false;
-                discoveryDetail =
-                    'Connect your Spotify library to find Discover Weekly.';
                 changedAccount();
                 return 'Saved playlist login removed.';
             },
@@ -380,77 +367,80 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             }),
         );
         libraryPage.add(account);
-        const discovery = new Adw.PreferencesGroup({
-            title: 'Discover Weekly',
+        const shortcuts = new Adw.PreferencesGroup({
+            title: 'Playlist shortcuts',
             description:
-                'QuickSpot finds Discover Weekly automatically in your saved Spotify playlists. Save it in Spotify once, then refresh here.',
+                'Add any playlist, including Discover Weekly, by its 22-character ID, Spotify link, or URI. Choose its name from Playlist shortcuts in the panel to play it on this speaker.',
         });
-        const detection = action(
-            discovery,
-            'Playlist discovery',
-            discoveryDetail,
-            'Refresh',
-            async () => {
-                await refreshDiscovery(true);
-                return detection.subtitle;
-            },
-            () => librarySaved && !discoveryLoading,
-        );
-        const automatic = button(
-            detection,
-            'Use automatic',
-            () => {
-                settings.set_string('discover-weekly', '');
-                weekly.text = '';
-                reloadLibrary();
-                return 'Automatic discovery enabled.';
-            },
-            () => Boolean(settings.get_string('discover-weekly')),
-        );
-        const manual = new Adw.ExpanderRow({
-            title: 'Manual override (optional)',
-            subtitle:
-                'For a localized name or a playlist Spotify does not list.',
-        });
-        const weekly = new Adw.EntryRow({
-            title: 'Playlist link or URI (optional)',
-        });
-        manual.add_row(weekly);
-        discovery.add(manual);
-        weekly.text = settings.get_string('discover-weekly');
-        manual.expanded = Boolean(weekly.text);
-        button(weekly, 'Save', () => {
-            settings.set_string(
-                'discover-weekly',
-                weekly.text.trim() ? playlistUri(weekly.text) : '',
+        const shortcutName = entry(shortcuts, 'Playlist name');
+        const shortcutId = entry(shortcuts, 'Playlist ID, link, or URI');
+        button(shortcutId, 'Add', () => {
+            const playlist = playlistShortcut(
+                shortcutName.text,
+                shortcutId.text,
             );
-            return 'Discover Weekly shortcut saved.';
+            const saved = readShortcuts(settings);
+            const existing = saved.some(({ uri }) => uri === playlist.uri);
+            if (!existing && saved.length >= 100)
+                throw new Error(
+                    'Remove a shortcut before adding more than 100 playlists.',
+                );
+            writeShortcuts(settings, [
+                ...saved.filter(({ uri }) => uri !== playlist.uri),
+                playlist,
+            ]);
+            shortcutName.text = '';
+            shortcutId.text = '';
+            return existing
+                ? 'Playlist shortcut updated.'
+                : 'Playlist shortcut added.';
         });
-        libraryPage.add(discovery);
-
-        async function refreshDiscovery(notifyPanel = false) {
-            if (closed || !librarySaved) return;
-            const request = ++discoveryRequest;
-            discoveryLoading = true;
-            discoveryDetail = 'Looking for Discover Weekly…';
-            sync();
-            try {
-                const lists = await spotify.playlists();
-                if (closed || request !== discoveryRequest) return;
-                discoveryDetail = discoverWeekly(lists)
-                    ? 'Found automatically in your Spotify library.'
-                    : 'Not found. Save Discover Weekly in Spotify, then choose Refresh.';
-                if (notifyPanel) reloadLibrary();
-            } catch (error) {
-                if (closed || request !== discoveryRequest) return;
-                discoveryDetail = error.message;
-            } finally {
-                if (!closed && request === discoveryRequest) {
-                    discoveryLoading = false;
-                    sync();
-                }
+        libraryPage.add(shortcuts);
+        const savedShortcuts = new Adw.PreferencesGroup({
+            title: 'Saved playlist shortcuts',
+        });
+        libraryPage.add(savedShortcuts);
+        let shortcutRows = [];
+        function renderShortcuts() {
+            if (closed) return;
+            for (const { row } of shortcutRows) savedShortcuts.remove(row);
+            shortcutRows = [];
+            const saved = readShortcuts(settings);
+            savedShortcuts.description = saved.length
+                ? 'Add the same playlist again with a new name to rename it.'
+                : 'No shortcuts yet. Add a playlist above.';
+            for (const playlist of saved) {
+                const row = new Adw.ActionRow({
+                    title: playlist.name,
+                    subtitle: playlist.uri,
+                    subtitle_selectable: true,
+                    use_markup: false,
+                });
+                const remove = new Gtk.Button({
+                    label: 'Remove',
+                    valign: Gtk.Align.CENTER,
+                });
+                remove.connect('clicked', () => {
+                    void perform(() => {
+                        writeShortcuts(
+                            settings,
+                            readShortcuts(settings).filter(
+                                ({ uri }) => uri !== playlist.uri,
+                            ),
+                        );
+                        return 'Playlist shortcut removed.';
+                    });
+                });
+                row.add_suffix(remove);
+                savedShortcuts.add(row);
+                shortcutRows.push({ row, remove });
             }
+            sync();
         }
+        const shortcutsId = settings.connect(
+            'changed::playlist-shortcuts',
+            renderShortcuts,
+        );
 
         function sync() {
             if (closed) return;
@@ -479,20 +469,18 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 : 'Not connected';
             connect.label = librarySaved ? 'Reconnect' : 'Connect';
             cancelLogin.visible = loggingIn;
-            detection.subtitle = settings.get_string('discover-weekly')
-                ? 'Using a manual playlist override. Choose Use automatic to remove it.'
-                : discoveryDetail;
-            automatic.visible = Boolean(settings.get_string('discover-weekly'));
             updating = true;
             autostart.active = player.state.autostart;
             autostart.sensitive = !busy && player.state.serviceLoaded;
             updating = false;
             for (const { widget, available } of controls)
                 widget.sensitive = !busy && available();
+            for (const { remove } of shortcutRows) remove.sensitive = !busy;
         }
 
         window.connect('close-request', () => {
             closed = true;
+            settings.disconnect(shortcutsId);
             cancel.cancel();
             login.cancel();
             spotify.destroy();
@@ -501,7 +489,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         });
         window.add(page);
         window.add(libraryPage);
-        sync();
+        renderShortcuts();
         player.start();
         // Loading credentials must not prevent Stop or other controls from working.
         void (async () => {
@@ -514,7 +502,6 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 if (!clientId.text && id) clientId.text = id;
                 if (!accountChanged) librarySaved = Boolean(tokens);
                 sync();
-                if (!accountChanged) await refreshDiscovery();
             } catch (_error) {
                 if (!closed) {
                     message.visible = true;

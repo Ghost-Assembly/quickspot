@@ -10,7 +10,8 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { PlayerController } from './modules/player.js';
 import { SpotifyClient } from './modules/spotify.js';
-import { discoverWeekly, shuffleMode } from './modules/model.js';
+import { shuffleMode } from './modules/model.js';
+import { readShortcuts } from './modules/shortcuts.js';
 
 const QuickSpotButton = GObject.registerClass(
     class QuickSpotButton extends PanelMenu.Button {
@@ -116,14 +117,11 @@ export default class QuickSpotExtension extends Extension {
             this._shuffleItems.set(mode, item);
         }
         this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._discover = this._action('Discover Weekly', () => {
-            const playlist = this._discoverPlaylist();
-            if (!playlist) {
-                this.openPreferences();
-                return;
-            }
-            return this._soloist.command('play', playlist.uri);
-        });
+        this._shortcuts = new PopupMenu.PopupSubMenuMenuItem(
+            'Playlist shortcuts',
+        );
+        this._menu.addMenuItem(this._shortcuts);
+        this._renderShortcuts();
         this._liked = this._action('Liked Songs', async () => {
             const client = this._spotify;
             const player = this._soloist;
@@ -171,9 +169,12 @@ export default class QuickSpotExtension extends Extension {
                 this._loadPlaylists();
             },
         );
-        this._discoverId = this._settings.connect(
-            'changed::discover-weekly',
-            () => this._sync(),
+        this._shortcutsId = this._settings.connect(
+            'changed::playlist-shortcuts',
+            () => {
+                this._renderShortcuts();
+                this._sync();
+            },
         );
         Main.panel.addToStatusArea(this.uuid, this._button);
         this._player.start();
@@ -235,27 +236,41 @@ export default class QuickSpotExtension extends Extension {
                 }),
             );
         for (const playlist of this._playlists) {
-            const item = new PopupMenu.PopupMenuItem(playlist.name);
-            item.setSensitive(this._soloist.state.loggedIn);
-            item.connect('activate', () => {
-                void this._perform(() =>
-                    this._soloist.command('play', playlist.uri),
-                );
-            });
+            const item = this._playlistItem(playlist);
             this._library.menu.addMenuItem(item);
             this._playlistItems.push(item);
         }
     }
 
-    _discoverPlaylist() {
-        try {
-            return discoverWeekly(
-                this._playlists,
-                this._settings.get_string('discover-weekly'),
+    _playlistItem(playlist) {
+        const item = new PopupMenu.PopupMenuItem(playlist.name);
+        item.setSensitive(this._soloist.state.loggedIn);
+        item.connect('activate', () => {
+            void this._perform(() =>
+                this._soloist.command('play', playlist.uri),
             );
-        } catch (_error) {
-            return null;
+        });
+        return item;
+    }
+
+    _renderShortcuts() {
+        this._shortcuts.menu.removeAll();
+        this._shortcutItems = [];
+        for (const playlist of readShortcuts(this._settings)) {
+            const item = this._playlistItem(playlist);
+            this._shortcuts.menu.addMenuItem(item);
+            this._shortcutItems.push(item);
         }
+        if (this._shortcutItems.length)
+            this._shortcuts.menu.addMenuItem(
+                new PopupMenu.PopupSeparatorMenuItem(),
+            );
+        const add = new PopupMenu.PopupMenuItem('Add playlist shortcut…');
+        add.connect(
+            'activate',
+            () => void this._perform(() => this.openPreferences()),
+        );
+        this._shortcuts.menu.addMenuItem(add);
     }
 
     _sync() {
@@ -293,12 +308,8 @@ export default class QuickSpotExtension extends Extension {
             this._activate,
         ])
             item.setSensitive(state.loggedIn);
-        this._discover.label.text = this._discoverPlaylist()
-            ? 'Discover Weekly'
-            : 'Set up Discover Weekly…';
-        this._discover.setSensitive(
-            !this._discoverPlaylist() || state.loggedIn,
-        );
+        for (const item of this._shortcutItems ?? [])
+            item.setSensitive(state.loggedIn);
         this._liked.setSensitive(state.loggedIn);
         this._togglePlayer.label.text = view.canToggle
             ? `${view.toggleLabel} player`
@@ -312,9 +323,9 @@ export default class QuickSpotExtension extends Extension {
 
     disable() {
         if (this._accountId) this._settings?.disconnect(this._accountId);
-        if (this._discoverId) this._settings?.disconnect(this._discoverId);
+        if (this._shortcutsId) this._settings?.disconnect(this._shortcutsId);
         this._accountId = 0;
-        this._discoverId = 0;
+        this._shortcutsId = 0;
         this._player?.destroy();
         this._spotify?.destroy();
         this._button?.destroy();
@@ -335,7 +346,8 @@ export default class QuickSpotExtension extends Extension {
         this._shuffle = null;
         this._shuffleItems = null;
         this._shuffleBusy = false;
-        this._discover = null;
+        this._shortcuts = null;
+        this._shortcutItems = [];
         this._liked = null;
         this._togglePlayer = null;
         this._loading = false;

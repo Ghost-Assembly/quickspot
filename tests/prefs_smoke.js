@@ -67,18 +67,12 @@ async function settled(predicate) {
 }
 
 class TestPreferences extends Preferences {
-    async _lookupSecret(kind) {
-        return kind === 'tokens' ? 'fake-saved-login' : null;
+    async _lookupSecret() {
+        return null;
     }
 
     _createSpotify() {
-        this.playlists = [
-            {
-                name: 'Discover Weekly',
-                uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
-            },
-        ];
-        return { playlists: async () => this.playlists, destroy() {} };
+        return { destroy() {} };
     }
 
     _createPlayer(onChange) {
@@ -131,53 +125,67 @@ async function testDynamicSettings() {
     try {
         testPrefs.fillPreferencesWindow(testWindow);
         testWindow.present();
-        const discovery = row(testWindow, 'Playlist discovery');
+        const name = row(testWindow, 'Playlist name');
+        const playlist = row(testWindow, 'Playlist ID, link, or URI');
+        const saved = () =>
+            testPrefs
+                .getSettings()
+                .get_value('playlist-shortcuts')
+                .deep_unpack();
+        name.text = 'Discover Weekly';
+        playlist.text = '37i9dQZF1DXcBWIGoYBM5M';
+        button(playlist, 'Add').emit('clicked');
         await settled(
-            () =>
-                discovery.subtitle ===
-                'Found automatically in your Spotify library.',
+            () => name.text === '' && button(playlist, 'Add').sensitive,
         );
-        const manual = row(testWindow, 'Manual override (optional)');
-        const weekly = row(testWindow, 'Playlist link or URI (optional)');
         check(
-            !manual.expanded && weekly.text === '',
-            'Automatic discovery required a manual URL.',
+            saved().length === 1 &&
+                row(testWindow, 'Discover Weekly').subtitle ===
+                    'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
+            'A playlist ID was not saved and shown without a library login.',
         );
-        testPrefs.playlists = [];
-        button(discovery, 'Refresh').emit('clicked');
+        name.text = 'Weekly mix';
+        playlist.text = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M';
+        button(playlist, 'Add').emit('clicked');
         await settled(
-            () =>
-                discovery.subtitle.startsWith('Not found.') &&
-                button(discovery, 'Refresh').sensitive,
+            () => name.text === '' && button(playlist, 'Add').sensitive,
         );
-        testPrefs.playlists = [
-            {
-                name: 'Discover Weekly',
-                uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
-            },
-        ];
-        button(discovery, 'Refresh').emit('clicked');
-        await settled(
-            () =>
-                discovery.subtitle.startsWith('Found automatically') &&
-                button(discovery, 'Refresh').sensitive,
+        check(
+            saved().length === 1 && row(testWindow, 'Weekly mix'),
+            'Renaming added a duplicate shortcut.',
         );
-        weekly.text = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N';
-        button(weekly, 'Save').emit('clicked');
+        name.text = 'Second playlist';
+        playlist.text =
+            'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5N?si=example';
+        button(playlist, 'Add').emit('clicked');
         await settled(
-            () =>
-                discovery.subtitle.startsWith('Using a manual') &&
-                button(discovery, 'Use automatic').sensitive,
+            () => name.text === '' && button(playlist, 'Add').sensitive,
         );
-        button(discovery, 'Use automatic').emit('clicked');
+        check(
+            saved().length === 2 && row(testWindow, 'Second playlist'),
+            'Multiple shortcuts were not saved.',
+        );
+        name.text = 'Bad destination';
+        playlist.text = 'https://example.com/playlist/37i9dQZF1DXcBWIGoYBM5N';
+        button(playlist, 'Add').emit('clicked');
+        await settled(() => button(playlist, 'Add').sensitive);
+        check(
+            saved().length === 2 &&
+                row(testWindow, 'QuickSpot').subtitle.includes(
+                    'Spotify playlist ID',
+                ),
+            'Invalid playlist input was saved or failed without feedback.',
+        );
+        button(row(testWindow, 'Weekly mix'), 'Remove').emit('clicked');
         await settled(
-            () =>
-                weekly.text === '' &&
-                discovery.subtitle.startsWith('Found automatically') &&
-                button(discovery, 'Refresh').sensitive,
+            () => saved().length === 1 && button(playlist, 'Add').sensitive,
+        );
+        button(row(testWindow, 'Second playlist'), 'Remove').emit('clicked');
+        await settled(
+            () => saved().length === 0 && button(playlist, 'Add').sensitive,
         );
         print(
-            'PASS: automatic Discover Weekly detection, missing-playlist guidance, refresh, and override reset',
+            'PASS: manual playlist IDs, links, rename, multiple shortcuts, validation, and removal without library login',
         );
         const runtime = row(testWindow, 'Player');
         check(

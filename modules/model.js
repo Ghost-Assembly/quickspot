@@ -109,7 +109,7 @@ export function playerPresentation(setup, playback) {
 
 export function playlistUri(input) {
     if (typeof input !== 'string')
-        throw new Error('Enter a Spotify playlist link.');
+        throw new Error('Enter a Spotify playlist ID, link, or URI.');
     const value = input.trim();
     if (value.length > 2048) throw new Error('Playlist link is too long.');
     const uri = /^spotify:playlist:([A-Za-z0-9]{22})$/.exec(value);
@@ -128,8 +128,10 @@ export function playlistUri(input) {
         parts[typeIndex] === 'playlist' &&
         /^[A-Za-z0-9]{22}$/.test(candidate ?? '') &&
         !/[\s#]/u.test(value);
-    const id = uri?.[1] ?? (link ? candidate : null);
-    if (!id) throw new Error('Use a Spotify playlist URL or URI.');
+    const id = /^[A-Za-z0-9]{22}$/.test(value)
+        ? value
+        : (uri?.[1] ?? (link ? candidate : null));
+    if (!id) throw new Error('Use a Spotify playlist ID, link, or URI.');
     return `spotify:playlist:${id}`;
 }
 
@@ -155,16 +157,30 @@ export function playlistPage(value) {
     return { items, next: value.next };
 }
 
-export function discoverWeekly(playlists, override = '') {
-    if (override)
-        return { name: 'Discover Weekly', uri: playlistUri(override) };
-    return (
-        playlists.find(
-            (item) =>
-                item.name.trim().replace(/\s+/gu, ' ').toLowerCase() ===
-                'discover weekly',
-        ) ?? null
-    );
+export function playlistShortcut(name, input) {
+    if (
+        typeof name !== 'string' ||
+        !name.trim() ||
+        name.length > 100 ||
+        /\p{Cc}/u.test(name)
+    )
+        throw new Error('Enter a playlist name of 1–100 characters.');
+    return { name: name.trim(), uri: playlistUri(input) };
+}
+
+export function playlistShortcuts(rows) {
+    if (!Array.isArray(rows)) return [];
+    const playlists = new Map();
+    for (const row of rows.slice(0, 100)) {
+        try {
+            if (!Array.isArray(row) || row.length !== 2) continue;
+            const playlist = playlistShortcut(row[0], row[1]);
+            playlists.set(playlist.uri, playlist);
+        } catch (_error) {
+            // Ignore malformed saved rows without breaking the Shell menu.
+        }
+    }
+    return [...playlists.values()];
 }
 
 export function shuffleMode(state) {

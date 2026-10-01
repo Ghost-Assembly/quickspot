@@ -165,7 +165,7 @@ async function testSoloist() {
         client.start();
         await waitFor(() => client.state.title === 'Native test song');
         check(client.state.loggedIn, 'Login state never arrived.');
-        await client.command('play', 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M');
+        await client.command('play', '37i9dQZF1DXcBWIGoYBM5M');
         await waitFor(() => commands.length === 1);
         check(
             commands[0].type === 'command' &&

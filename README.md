@@ -5,7 +5,7 @@ Spotify in the GNOME panel, powered by Spotify Soloist. Part of the
 
 QuickSpot targets **GNOME Shell 50**. It provides now playing information,
 play/pause, previous/next, device activation, Liked Songs, an automatically loaded playlist
-menu, a Discover Weekly shortcut, and an action to open Spotify in your default
+menu, named playlist shortcuts, and an action to open Spotify in your default
 browser. Preferences can install or update the official Soloist binary and manage
 its user service.
 
@@ -14,7 +14,7 @@ its user service.
 [Soloist supports lossless audio up to 24-bit/44.1 kHz with Premium](https://github.com/spotify/soloist).
 However, its current [CLI](https://developer.spotify.com/documentation/soloist/reference/command-line)
 and [WebSocket API](https://developer.spotify.com/documentation/soloist/reference/websocket-api)
-provide no audio quality control or active bitrate report. QuickSpot cannot set a
+provide no audio quality control, configured quality level, or active bitrate report. QuickSpot cannot set a
 lossless default or offer a working bitrate selector through those interfaces.
 
 Select QuickSpot in the Spotify app's Connect device menu, then choose
@@ -49,11 +49,13 @@ are host packages; development tooling is managed by mise.
    Connect the same account you paired with the speaker. **Liked Songs** resolves
    that account's playable collection; Spotify's `spotify:collection:tracks` app
    navigation URI is not accepted by Soloist's playback API.
-6. Save **Discover Weekly** to your Spotify library once. QuickSpot detects it
-   automatically when it loads your playlists. **Library → Discover Weekly** shows
-   whether it was found and has a **Refresh** button. No playlist URL is required.
-   For a localized name or a playlist absent from the API response, expand
-   **Manual override (optional)**. **Use automatic** removes an existing override.
+6. In **Library → Playlist shortcuts**, enter a name and the playlist's 22-character
+   ID, Spotify link, or URI, then choose **Add**. This works for Discover Weekly and
+   other playlists even when Spotify omits them from its library API. Select the
+   saved name under **Playlist shortcuts** in the panel to play it. Shortcuts only
+   require a paired speaker; the optional playlist-library login is unnecessary.
+   Add the same playlist with a new name to rename it, or choose **Remove** to delete
+   its shortcut.
 
 For this checkout, `mise exec -- just import-credentials` imports the local `.env`
 without printing credential values. The extension ZIP excludes that file.

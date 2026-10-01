@@ -1,5 +1,5 @@
 {
-    "description": "Spotify Soloist playback, your playlists, and Discover Weekly from the GNOME panel. Part of Ghost Assembly.",
+    "description": "Spotify Soloist playback, Liked Songs, and named playlist shortcuts from the GNOME panel. Part of Ghost Assembly.",
     "name": "QuickSpot",
     "settings-schema": "org.gnome.shell.extensions.quickspot",
     "shell-version": ["50"],

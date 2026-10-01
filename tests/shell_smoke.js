@@ -4,6 +4,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import Gio from 'gi://Gio';
 import QuickSpotExtension from './quickspot.js';
 import { SpotifyClient } from './modules/spotify.js';
+import { writeShortcuts } from './modules/shortcuts.js';
 
 function check(condition, message) {
     if (!condition) throw new Error(message);
@@ -109,6 +110,46 @@ export default class ShellSmoke extends QuickSpotExtension {
         this._soloist.state.loggedIn = false;
         this._sync();
         check(!this._shuffle.sensitive, 'Unpaired speaker enabled shuffle.');
+        writeShortcuts(this._settings, [
+            {
+                name: 'Weekly mix',
+                uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N',
+            },
+        ]);
+        this._renderShortcuts();
+        this._sync();
+        check(
+            this._shortcutItems.length === 1 &&
+                !this._shortcutItems[0].sensitive,
+            'Unpaired speaker enabled manual playlist playback.',
+        );
+        this._soloist.state.loggedIn = true;
+        this._sync();
+        check(
+            this._shortcutItems[0].sensitive,
+            'Paired speaker disabled manual playlist playback.',
+        );
+        const command = this._soloist.command;
+        let played;
+        try {
+            this._soloist.command = async (action, uri) => {
+                played = { action, uri };
+            };
+            this._shortcutItems[0].activate(null);
+            check(
+                played?.action === 'play' &&
+                    played.uri === 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N',
+                'Manual shortcut did not play the saved playlist.',
+            );
+        } finally {
+            this._soloist.command = command;
+        }
+        writeShortcuts(this._settings, []);
+        this._renderShortcuts();
+        check(
+            this._shortcutItems.length === 0,
+            'Removed shortcut remained in the panel.',
+        );
         console.debug('[quickspot-test] top bar metadata passed');
     }
 
@@ -124,12 +165,6 @@ export default class ShellSmoke extends QuickSpotExtension {
             this._playlistItems.length === 2,
             'Playlist menu did not populate.',
         );
-        check(
-            this._discoverPlaylist()?.uri ===
-                'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N' &&
-                this._discover.label.text === 'Discover Weekly',
-            'Discover Weekly required a manual URL despite being in the library.',
-        );
         console.debug('[quickspot-test] populated menu passed');
     }
 
@@ -140,7 +175,10 @@ export default class ShellSmoke extends QuickSpotExtension {
             'Teardown retained destroyed playlist menu items.',
         );
         check(
-            !this._menu && !this._library,
+            !this._menu &&
+                !this._library &&
+                !this._shortcuts &&
+                this._shortcutItems.length === 0,
             'Teardown retained destroyed menus.',
         );
         console.debug('[quickspot-test] teardown passed');

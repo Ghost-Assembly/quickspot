@@ -3,7 +3,8 @@ import test from 'node:test';
 import {
     playlistUri,
     playlistPage,
-    discoverWeekly,
+    playlistShortcut,
+    playlistShortcuts,
     shuffleMode,
     tokenRecord,
     savedToken,
@@ -60,23 +61,38 @@ test('shuffle follows player options and distinguishes Smart Shuffle', () => {
     );
 });
 
-test('Discover Weekly is automatic unless a manual playlist overrides it', () => {
-    const discovered = { name: '  discover   WEEKLY  ', uri };
-    assert.equal(
-        discoverWeekly([{ name: 'Another playlist', uri }, discovered]),
-        discovered,
-    );
-    assert.equal(discoverWeekly([]), null);
-    const override = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N';
-    assert.equal(discoverWeekly([discovered], override).uri, override);
-    assert.equal(discoverWeekly([discovered], '').uri, uri);
+test('manual shortcuts accept playlist IDs and validate names and destinations', () => {
+    assert.deepEqual(playlistShortcut(' Discover Weekly ', id), {
+        name: 'Discover Weekly',
+        uri,
+    });
+    for (const name of [
+        '',
+        '   ',
+        null,
+        'x'.repeat(101),
+        'name\nwith controls',
+    ])
+        assert.throws(() => playlistShortcut(name, id));
     assert.throws(() =>
-        discoverWeekly([discovered], 'https://example.com/playlist/invalid'),
+        playlistShortcut('Weekly', 'https://example.com/playlist'),
     );
+    assert.deepEqual(
+        playlistShortcuts([
+            ['First name', id],
+            ['New name', uri],
+            ['Invalid', 'spotify:track:' + id],
+            [''],
+            null,
+        ]),
+        [{ name: 'New name', uri }],
+    );
+    assert.deepEqual(playlistShortcuts(null), []);
 });
 
 test('playlist links and URIs normalize to playable contexts', () => {
     for (const input of [
+        id,
         uri,
         `https://open.spotify.com/playlist/${id}?si=example`,
         `https://open.spotify.com/intl-en/playlist/${id}`,

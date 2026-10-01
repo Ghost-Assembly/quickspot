@@ -14,11 +14,10 @@ QuickTS, and QuickTiler. No runtime dependencies were added.
 - **Redundant controls:** separate Start/Stop and Enable/Disable rows are replaced
   by a dynamic player control and a Start at login switch. Install changes to
   Update or Repair. Preferences separate speaker setup from optional playlist login.
-- **Discover Weekly setup:** automatic library detection now has a visible status
-  and Refresh action in preferences. The manual URL field is an optional override;
-  Use automatic clears it. Both panel and preferences share the same detection
-  logic, including case and whitespace normalization. Spotify must return the
-  saved playlist; a live check found no Discover Weekly in this account's list.
+- **Playlist shortcuts:** users can save named playlists by ID, link, or URI and
+  play them from the panel without the optional library login. Adding the same
+  playlist updates its name; Remove deletes its shortcut. Discover Weekly uses
+  this same flow, with no automatic discovery or repeated save-and-refresh prompt.
 - **Shuffle:** the panel and MPRIS now expose ordinary shuffle control. The panel
   distinguishes Smart Shuffle using reported recommendation enhancement and follows
   remote option changes. Smart Shuffle activation remains in Spotify because the
@@ -95,5 +94,5 @@ of the local checks. No GitHub settings were changed.
 - Spotify's official downloads use mutable HTTPS URLs without an independently
   verified signature or checksum in this installer. Archive validation and the
   binary version check do not establish supply-chain authenticity beyond HTTPS.
-- Soloist's active stream quality is not exposed by its local API. QuickSpot cannot
+- Soloist's configured quality level and active bitrate are not exposed by its local API. QuickSpot cannot
   verify or promise that current playback is lossless.

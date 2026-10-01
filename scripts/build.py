@@ -15,6 +15,7 @@ RUNTIME_FILES = [
     "LICENSE",
     "schemas/org.gnome.shell.extensions.quickspot.gschema.xml",
     "modules/model.js",
+    "modules/shortcuts.js",
     "modules/mpris.js",
     "modules/platform.js",
     "modules/player.js",
