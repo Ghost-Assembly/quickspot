@@ -150,29 +150,32 @@ export class SoloistClient {
             return Promise.reject(error);
         }
         return this._enqueue(async () => {
-            if (command === 'play' && !this.state.active) {
-                await this._dispatch({ type: 'command', command: 'activate' });
-                // An acknowledgement means dispatched; wait for actual activation.
-                const deadline = GLib.get_monotonic_time() + 5000000;
-                while (!this.state.active) {
-                    if (
-                        !this.state.connected ||
-                        this._cancel.is_cancelled() ||
-                        GLib.get_monotonic_time() > deadline
-                    )
-                        throw new Error(
-                            'Spotify did not activate this device. Select it in Spotify and try again.',
-                        );
-                    await new Promise((resolve) =>
-                        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                            resolve();
-                            return GLib.SOURCE_REMOVE;
-                        }),
-                    );
-                }
-            }
+            if (command === 'play') await this._ensureActive();
             return this._dispatch(message);
         });
+    }
+
+    async _ensureActive() {
+        if (this.state.active) return;
+        await this._dispatch({ type: 'command', command: 'activate' });
+        // An acknowledgement means dispatched; wait for actual activation.
+        const deadline = GLib.get_monotonic_time() + 5000000;
+        while (!this.state.active) {
+            if (
+                !this.state.connected ||
+                this._cancel.is_cancelled() ||
+                GLib.get_monotonic_time() > deadline
+            )
+                throw new Error(
+                    'Spotify did not activate this device. Select it in Spotify and try again.',
+                );
+            await new Promise((resolve) =>
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                    resolve();
+                    return GLib.SOURCE_REMOVE;
+                }),
+            );
+        }
     }
 
     setVolume(volume) {
@@ -186,13 +189,14 @@ export class SoloistClient {
     setShuffle(enabled) {
         if (typeof enabled !== 'boolean')
             return Promise.reject(new Error('Invalid shuffle setting.'));
-        return this._enqueue(() =>
-            this._dispatch({
+        return this._enqueue(async () => {
+            await this._ensureActive();
+            return this._dispatch({
                 type: 'command',
                 command: 'set_shuffle',
                 enabled,
-            }),
-        );
+            });
+        });
     }
 
     _enqueue(callback) {

@@ -84,7 +84,7 @@ export default class QuickSpotExtension extends Extension {
         for (const [mode, label] of [
             ['off', 'Off'],
             ['on', 'On'],
-            ['smart', 'Smart Shuffle in Spotify…'],
+            ['smart', 'About Smart Shuffle…'],
         ]) {
             const item = new PopupMenu.PopupMenuItem(label);
             item.connect('activate', () => {
@@ -92,9 +92,8 @@ export default class QuickSpotExtension extends Extension {
                     void this._perform(() => {
                         Main.notify(
                             'QuickSpot',
-                            'Enable Smart Shuffle in Spotify with this speaker selected. On your phone, tap Shuffle until Smart Shuffle is on.',
+                            'QuickSpot can display Smart Shuffle, but cannot enable it yet. Enable it in Spotify’s phone app with this speaker selected; QuickSpot will follow the change.',
                         );
-                        this._openSpotify();
                     });
                     return;
                 }
@@ -193,13 +192,6 @@ export default class QuickSpotExtension extends Extension {
         return item;
     }
 
-    _openSpotify() {
-        const uri = Gio.AppInfo.get_default_for_uri_scheme('spotify')
-            ? 'spotify:'
-            : 'https://open.spotify.com/';
-        Gio.AppInfo.launch_default_for_uri(uri, null);
-    }
-
     async _perform(callback) {
         try {
             await callback();
@@ -279,22 +271,20 @@ export default class QuickSpotExtension extends Extension {
         this._play.label.text = state.status === 'playing' ? 'Pause' : 'Play';
         const mode = shuffleMode(state);
         const shuffleLabels = new Map([
-            ['unknown', 'Unavailable'],
+            ['unknown', 'Unknown'],
             ['off', 'Off'],
             ['on', 'On'],
             ['smart', 'Smart Shuffle'],
         ]);
         this._shuffle.label.text = `Shuffle: ${shuffleLabels.get(mode)}`;
-        this._shuffle.setSensitive(state.loggedIn && state.active);
+        this._shuffle.setSensitive(state.connected && state.loggedIn);
         for (const [value, item] of this._shuffleItems) {
             item.setOrnament(
-                value === mode
+                value === mode && value !== 'smart'
                     ? PopupMenu.Ornament.CHECK
                     : PopupMenu.Ornament.NONE,
             );
-            item.setSensitive(
-                !this._shuffleBusy && (value === 'smart' || mode !== 'unknown'),
-            );
+            item.setSensitive(!this._shuffleBusy);
         }
         for (const item of [
             this._previous,

@@ -1,6 +1,7 @@
 // Loaded only in the isolated GNOME session by scripts/check_live.py.
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import Gio from 'gi://Gio';
 import QuickSpotExtension from './quickspot.js';
 import { SpotifyClient } from './modules/spotify.js';
 
@@ -40,6 +41,7 @@ export default class ShellSmoke extends QuickSpotExtension {
         this._soloist.state = {
             ...this._soloist.state,
             active: true,
+            connected: true,
             title: 'Test song',
             artist: 'Test artist',
             loggedIn: true,
@@ -65,7 +67,7 @@ export default class ShellSmoke extends QuickSpotExtension {
         check(
             this._shuffle.label.text === 'Shuffle: Smart Shuffle' &&
                 this._shuffleItems.get('smart')._ornament ===
-                    PopupMenu.Ornament.CHECK,
+                    PopupMenu.Ornament.NONE,
             'Smart Shuffle indicator did not follow player state.',
         );
         this._soloist.state.active = false;
@@ -75,9 +77,38 @@ export default class ShellSmoke extends QuickSpotExtension {
             'Inactive device left stale music in the top bar.',
         );
         check(
-            !this._shuffle.sensitive,
-            'Inactive speaker left shuffle controls enabled.',
+            this._shuffle.sensitive && this._shuffleItems.get('on').sensitive,
+            'Inactive paired speaker disabled shuffle controls.',
         );
+        this._soloist.state.shuffle = null;
+        this._sync();
+        check(
+            this._shuffleItems.get('on').sensitive &&
+                this._shuffleItems.get('off').sensitive,
+            'Unknown shuffle state disabled actionable shuffle controls.',
+        );
+        const launchUri = Gio.AppInfo.launch_default_for_uri;
+        let launched = false;
+        try {
+            Gio.AppInfo.launch_default_for_uri = () => {
+                launched = true;
+            };
+            check(
+                this._shuffleItems.get('smart').label.text ===
+                    'About Smart Shuffle…',
+                'Smart Shuffle help was mislabeled as a playback action.',
+            );
+            this._shuffleItems.get('smart').activate(null);
+            check(
+                !launched,
+                'Smart Shuffle help opened an external application.',
+            );
+        } finally {
+            Gio.AppInfo.launch_default_for_uri = launchUri;
+        }
+        this._soloist.state.loggedIn = false;
+        this._sync();
+        check(!this._shuffle.sensitive, 'Unpaired speaker enabled shuffle.');
         console.debug('[quickspot-test] top bar metadata passed');
     }
 

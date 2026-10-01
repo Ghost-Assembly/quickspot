@@ -22,8 +22,10 @@ QuickTS, and QuickTiler. No runtime dependencies were added.
 - **Shuffle:** the panel and MPRIS now expose ordinary shuffle control. The panel
   distinguishes Smart Shuffle using reported recommendation enhancement and follows
   remote option changes. Smart Shuffle activation remains in Spotify because the
-  public Soloist API and installed CLI expose only shuffle on/off; the UI labels
-  that handoff explicitly.
+  public Soloist API and installed CLI expose only shuffle on/off. The menu explains
+  this locally without launching a browser. Ordinary shuffle stays available while
+  paired, including when its state is unknown or this speaker is inactive, and
+  waits for actual device activation before changing shuffle.
 - **Invalid Liked Songs URI:** the earlier test only checked that a command was sent.
   A live reproduction showed that Soloist rejects `spotify:collection:tracks`.
   Liked Songs now resolves `spotify:user:<id>:collection` from the library account's
@@ -70,6 +72,12 @@ PlayPause calls paused and resumed Soloist. The isolated GNOME test verified the
 accessible artist/song label and its reset when this speaker becomes inactive.
 These observations verify the playback state, not audibility or visibility from
 another device; those require checking the audio output and Spotify app directly.
+
+The shuffle regression checks cover an inactive paired speaker, unknown shuffle
+state, delayed activation, failed activation with a successful retry, and Smart
+Shuffle help without an external application launch. The live inactive-shuffle
+check was skipped because the player reported Smart Shuffle active; changing it
+would prevent restoring that mode through the current local API.
 
 Dependency scans with npm audit and OSV found no known vulnerabilities. ESLint's
 security rules, Ruff's security rules, schema checks, and the secret scan are part

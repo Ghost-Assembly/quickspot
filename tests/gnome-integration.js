@@ -67,6 +67,7 @@ async function testSoloist() {
     GLib.mkdir_with_parents(data, 0o700);
     const server = new Soup.Server();
     const commands = [];
+    let activateDevice = true;
     let socket;
     server.add_websocket_handler(
         '/',
@@ -94,13 +95,20 @@ async function testSoloist() {
                         command: command.command,
                     }),
                 );
-                if (command.command === 'activate')
-                    connection.send_text(
-                        JSON.stringify({
-                            type: 'device_changed',
-                            is_active: true,
-                        }),
-                    );
+                if (command.command === 'activate' && activateDevice)
+                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+                        check(
+                            commands.at(-1).command === 'activate',
+                            'Playback command was sent before device activation.',
+                        );
+                        connection.send_text(
+                            JSON.stringify({
+                                type: 'device_changed',
+                                is_active: true,
+                            }),
+                        );
+                        return GLib.SOURCE_REMOVE;
+                    });
                 if (command.command === 'set_shuffle')
                     connection.send_text(
                         JSON.stringify({
@@ -253,6 +261,11 @@ async function testSoloist() {
             commands.at(-1).command === 'skip_next',
             'MPRIS Next did not reach Soloist.',
         );
+        socket.send_text(
+            JSON.stringify({ type: 'device_changed', is_active: false }),
+        );
+        await waitFor(() => !client.state.active);
+        const beforeShuffle = commands.length;
         await call(
             'org.freedesktop.DBus.Properties',
             'Set',
@@ -263,10 +276,13 @@ async function testSoloist() {
             ]),
         );
         await waitFor(() => client.state.shuffle === true);
+        const [activation, shuffleCommand] = commands.slice(beforeShuffle);
         check(
-            commands.at(-1).command === 'set_shuffle' &&
-                commands.at(-1).enabled === true,
-            'Desktop shuffle did not reach Soloist.',
+            activation.command === 'activate' &&
+                shuffleCommand.command === 'set_shuffle' &&
+                shuffleCommand.enabled === true &&
+                client.state.active,
+            'Desktop shuffle did not activate the speaker before changing shuffle.',
         );
         await client.setShuffle(false);
         await waitFor(() => shuffleMode(client.state) === 'off');
@@ -296,7 +312,31 @@ async function testSoloist() {
             'Smart Shuffle was not exposed as shuffled playback.',
         );
         print(
-            'PASS: ordinary shuffle control, remote Smart Shuffle updates, and MPRIS shuffle',
+            'PASS: inactive speaker shuffle activation, remote Smart Shuffle updates, and MPRIS shuffle',
+        );
+        socket.send_text(
+            JSON.stringify({ type: 'device_changed', is_active: false }),
+        );
+        await waitFor(() => !client.state.active);
+        activateDevice = false;
+        const beforeFailedActivation = commands.length;
+        let activationRejected = false;
+        try {
+            await client.setShuffle(false);
+        } catch (error) {
+            activationRejected = error.message.includes('did not activate');
+        }
+        check(
+            activationRejected &&
+                commands.length === beforeFailedActivation + 1 &&
+                commands.at(-1).command === 'activate',
+            'Shuffle was sent despite an activation acknowledgement without activation.',
+        );
+        activateDevice = true;
+        await client.setShuffle(false);
+        await waitFor(() => client.state.active && !client.state.shuffle);
+        print(
+            'PASS: failed activation blocks shuffle and subsequent retry succeeds',
         );
         print(
             'PASS: real MPRIS discovery, metadata, play/pause, and next over a private D-Bus session',

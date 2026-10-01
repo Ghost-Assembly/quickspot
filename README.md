@@ -71,9 +71,12 @@ Media controls remain available when the panel extension is disabled while the
 player service is running and paired.
 
 The panel's **Shuffle** menu controls ordinary shuffle and follows the actual player
-state, including changes from Spotify. **Smart Shuffle in Spotify…** opens Spotify;
-select this speaker and enable Smart Shuffle there. QuickSpot displays Smart Shuffle
-when Soloist reports shuffle with recommendation enhancement. Soloist's current
+state, including changes from Spotify. Choosing **On** or **Off** activates this
+speaker automatically, even when its current shuffle state is unknown. **About Smart
+Shuffle…** explains the limitation inside QuickSpot without opening a browser.
+Enable Smart Shuffle in Spotify's phone app with this speaker selected; QuickSpot
+displays Smart Shuffle when Soloist reports shuffle with recommendation enhancement.
+Soloist's current
 [local API](https://developer.spotify.com/documentation/soloist/reference/websocket-api)
 provides an on/off shuffle command but no Smart Shuffle activation command. Desktop
 media clients can also read and change ordinary shuffle through MPRIS.
