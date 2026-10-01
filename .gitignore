@@ -7,3 +7,6 @@ dist/
 schemas/gschemas.compiled
 __pycache__/
 .ruff_cache/
+test-results/
+playwright-report/
+*.shell-extension.zip

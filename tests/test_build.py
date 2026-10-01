@@ -31,17 +31,32 @@ class BuildTests(unittest.TestCase):
                 "modules/private.env",
                 "scripts/soloist",
                 "tests/private.js",
+                "docs/index.html",
+                "docs/assets/emblem.webp",
+                "playwright.config.js",
             ]:
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text("excluded fixture")
 
             artifact = builder.build(root)
+            self.assertEqual(artifact.parent, root)
 
             with zipfile.ZipFile(artifact) as bundle:
                 files = {name for name in bundle.namelist() if not name.endswith("/")}
                 self.assertEqual(files, set(builder.RUNTIME_FILES))
                 self.assertIsNone(bundle.testzip())
+            builder.check(root)
+
+            # A bundle with the right names but altered contents is also rejected.
+            with zipfile.ZipFile(artifact) as bundle:
+                contents = {name: bundle.read(name) for name in bundle.namelist()}
+            contents["extension.js"] = b"altered fixture"
+            with zipfile.ZipFile(artifact, "w") as bundle:
+                for name, content in contents.items():
+                    bundle.writestr(name, content)
+            with self.assertRaisesRegex(RuntimeError, "differs"):
+                builder.check(root)
 
     def test_invalid_schema_cannot_produce_a_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as work:
@@ -56,7 +71,7 @@ class BuildTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 builder.build(root)
 
-            self.assertEqual(list((root / "dist").iterdir()), [])
+            self.assertEqual(list(root.glob("*.shell-extension.zip")), [])
 
 
 if __name__ == "__main__":

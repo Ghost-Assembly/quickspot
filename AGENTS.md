@@ -32,10 +32,14 @@ dependencies and `package-lock.json`. GNOME libraries come from the host. Python
 helpers use the standard library and support Python 3.12 or newer at runtime.
 Do not retrofit a second task runner or add Python packaging for these scripts.
 
-- `mise exec -- just setup`: install tools and development dependencies.
-- `mise exec -- just fmt`: format changes.
-- `mise exec -- just ci`: lint, schemas, offline tests, secrets, and build.
-- `mise exec -- just test-live`: isolated GNOME Shell and GTK behavior checks.
+- `just setup`: install tools and development dependencies.
+- `just fmt`: format changes.
+- `just ci`: lint, schemas, offline tests, docs, secrets, and build.
+- `just test-docs`: documentation checks in Chromium and Firefox,
+  also included in `ci`; `setup` installs both browsers.
+- `just docs`: serve the static documentation site locally.
+- `just pack-check`: compare the root ZIP with GNOME’s official packer.
+- `just test-live`: packer comparison and isolated GNOME Shell/GTK checks.
 
 Add behavior regressions for bugs, especially credentials, cancellation, archive
 safety, service recovery, and lifecycle changes. Tests must use fixtures, temporary
@@ -44,15 +48,19 @@ player service, or desktop settings for automated tests. Run `test-live` when
 changing panel or preferences behavior. Report actual results and any unverified
 account, audio, network-discovery, or upstream behavior.
 
-`scripts/build.py` packages only its runtime allowlist. Update that list when adding
+`scripts/build.py` packages only its runtime allowlist into the repository-root
+ZIP, using Python’s standard library. `just install` builds and installs that ZIP. Update that list when adding
 runtime files, and keep credentials, downloaded binaries, docs, tests, dependencies,
 and planning artifacts out of the ZIP.
 
 ## Documentation and scope
 
-Maintain user and development instructions in `README.md`, and agent instructions
-here. Keep both aligned with actual code and commands. Do not add review reports,
-planning documents, task logs, or historical machine-specific verification claims.
+Maintain user and development instructions in `README.md` and `docs/`, and agent
+instructions here. Keep them aligned with actual code and commands. The docs site
+uses the sibling Quick projects' shared CSS and self-hosted assets, with local
+additions in `docs/project.css`. It has no JavaScript or external asset requests.
+Do not add review reports, planning documents, task logs, or historical
+machine-specific verification claims.
 Preserve upstream license notices; do not redistribute Soloist in the bundle.
 Write new prose, comments, and identifiers in American English. Keep fixes focused
 and ask before pushing, opening or merging pull requests, changing remote settings,

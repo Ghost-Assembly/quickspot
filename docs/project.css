@@ -1,0 +1,73 @@
+/* QuickSpot additions to the shared Ghost Assembly docs template. */
+.spot-shot {
+    gap: 20px;
+}
+.spot-shot .gtop {
+    border-radius: 10px;
+}
+.spot-shot .gtop .qm {
+    background: #303034;
+}
+.spot-menu {
+    position: relative;
+    width: min(100%, 350px);
+    margin-inline-end: 8px;
+    padding: 10px 6px;
+    border: 1px solid #505054;
+    border-radius: 16px;
+    background: #353539;
+    box-shadow: 0 20px 56px rgb(0 0 0 / 0.5);
+}
+.spot-menu::before {
+    content: '';
+    position: absolute;
+    inset-block-start: -7px;
+    inset-inline-end: 64px;
+    width: 12px;
+    height: 12px;
+    border-block-start: 1px solid #505054;
+    border-inline-start: 1px solid #505054;
+    background: #353539;
+    transform: rotate(45deg);
+}
+.spot-status {
+    padding: 9px 16px 12px;
+    color: #d8d8dd;
+    font-size: 13px;
+}
+.spot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 33px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+.spot-selected {
+    background: #505055;
+}
+.spot-chevron {
+    color: #d8d8dd;
+}
+.spot-separator {
+    height: 1px;
+    margin: 8px 16px;
+    background: #616168;
+}
+.shot figcaption {
+    color: var(--mist);
+    font-size: 13px;
+}
+@media (min-width: 761px) {
+    .toc a {
+        min-height: 32px;
+    }
+}
+@media (max-width: 760px) {
+    .spot-menu {
+        margin-inline-end: 0;
+    }
+}

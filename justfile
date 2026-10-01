@@ -12,7 +12,10 @@ default:
 setup:
     mise install
     npm ci --ignore-scripts
+    npx playwright install chromium firefox
+    @for tool in gjs glib-compile-schemas gnome-shell gnome-extensions systemctl; do command -v "$tool" >/dev/null || { echo "missing host tool: $tool" >&2; exit 1; }; done
     /usr/bin/gjs -c 'imports.gi.Soup; imports.gi.Secret; imports.gi.Adw;'
+    @echo 'ready'
 
 # Format source and configuration
 fmt:
@@ -34,6 +37,14 @@ test:
     python3 -m unittest discover -s tests -p 'test_*.py' -v
     python3 scripts/run_native.py
 
+# Check the documentation site in Chromium and Firefox
+test-docs *args:
+    npx playwright test {{ args }}
+
+# Serve the static documentation site locally
+docs:
+    python3 -m http.server 8000 --bind 127.0.0.1 --directory docs
+
 # Scan working files and Git history for accidentally included secrets
 security:
     gitleaks dir --redact --no-banner --config .gitleaks.toml .
@@ -42,6 +53,10 @@ security:
 # Build the extension ZIP without credentials or Spotify binaries
 build:
     python3 scripts/build.py
+
+# Compare the bundle with GNOME's official extension packer
+pack-check: build
+    python3 scripts/build.py --check
 
 # Run GNOME Shell in a separate development window
 run:
@@ -73,13 +88,13 @@ doctor:
 
 # Remove only generated artifacts
 clean:
-    python3 -c 'from pathlib import Path; files = list(Path("dist").glob("*.shell-extension.zip")) + [Path("schemas/gschemas.compiled")]; [p.unlink(missing_ok=True) for p in files]'
+    python3 -c 'from pathlib import Path; files = list(Path(".").glob("*.shell-extension.zip")) + list(Path("dist").glob("*.shell-extension.zip")) + [Path("schemas/gschemas.compiled")]; [p.unlink(missing_ok=True) for p in files]'
 
 # Run reproducible checks and build
-ci: lint test security build
+ci: lint test test-docs security build
 
 # Exercise GNOME enable, disable, re-enable, and preferences in an isolated session
-test-live: build
+test-live: pack-check
     python3 scripts/check_live.py
 
 # Save this repository's local credentials in GNOME Keyring
@@ -88,7 +103,7 @@ import-credentials:
 
 # Install the built extension for the current user
 install: build
-    /usr/bin/gnome-extensions install --force dist/{{ uuid }}.shell-extension.zip
+    /usr/bin/gnome-extensions install --force {{ uuid }}.shell-extension.zip
 
 # Stop and disable Soloist, then remove the extension (keep saved data)
 uninstall:

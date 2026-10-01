@@ -10,6 +10,12 @@ playlist shortcuts. Preferences install or update Soloist and manage its systemd
 user service. The service exports MPRIS controls for desktop media keys and other
 media clients, even while the extension is disabled.
 
+**[Documentation →](https://ghost-assembly.com/quickspot/)** —
+[player setup](https://ghost-assembly.com/quickspot/#player),
+[playlist examples](https://ghost-assembly.com/quickspot/#library),
+[troubleshooting](https://ghost-assembly.com/quickspot/#troubleshooting),
+architecture, testing, and packaging.
+
 ## Requirements
 
 - GNOME Shell 50 with GJS, libsecret, libsoup 3, GTK 4, and libadwaita.
@@ -23,19 +29,18 @@ Python development checks use the pinned interpreter.
 
 ## Install
 
-From this checkout:
+With mise activated in your shell and `just` available, from this checkout:
 
 ```sh
-mise install
-mise exec -- just setup
-mise exec -- just install
+just setup
+just install
 ```
 
 Log out and back in so GNOME discovers the extension, then run:
 
 ```sh
-mise exec -- just enable
-mise exec -- just prefs
+just enable
+just prefs
 ```
 
 Log out and back in after updating a loaded extension to load its new panel code.
@@ -81,7 +86,7 @@ Playlist loading follows pagination, refreshes expired tokens, and observes rate
 
 Credentials can also be imported from an `.env` file containing
 `SPOTIFY_SOLOIST_KEY` and/or `SPOTIFY_CLIENT_ID`. Use **Import credentials** in
-preferences or `mise exec -- just import-credentials` for this checkout's `.env`.
+preferences or `just import-credentials` for this checkout's `.env`.
 The file is parsed as literal values and excluded from the extension bundle.
 
 ## Shuffle and audio quality
@@ -99,7 +104,7 @@ cannot confirm that a stream is lossless.
 
 ## Troubleshooting
 
-Run `mise exec -- just doctor` to check installation, service state, saved-key
+Run `just doctor` to check installation, service state, saved-key
 presence, local API connectivity, and pairing without printing credentials or
 account information. A running service alone does not confirm pairing or audible
 playback. If Soloist has expired, choose **Update** in preferences.
@@ -110,7 +115,7 @@ routing can prevent discovery. Soloist uses multicast DNS (UDP 5353) and a dynam
 TCP pairing port, separate from its loopback API. Check network and firewall rules;
 see [Spotify Connect troubleshooting](https://support.spotify.com/us/article/spotify-connect/).
 
-Use `mise exec -- just logs` for extension logs and `mise exec -- just logs-player`
+Use `just logs` for extension logs and `just logs-player`
 for fixed launcher diagnostics. Raw Soloist output is silenced because it can
 contain credentials and account information.
 
@@ -143,7 +148,7 @@ in QuickSpot's bundle.
 ## Uninstall
 
 ```sh
-mise exec -- just uninstall
+just uninstall
 ```
 
 This stops and disables Soloist, then removes the extension. It preserves keyring
@@ -154,17 +159,26 @@ it from preferences or with `systemctl --user stop quickspot-soloist.service`.
 ## Development
 
 The project uses native GJS ES modules without a transpilation step or npm runtime
-dependencies. `justfile` defines project commands; run `mise exec -- just` to list them.
+dependencies. `justfile` defines project commands; run `just` to list them.
 
 ```sh
-mise exec -- just ci
-mise exec -- just test-live
+just ci
+just test-live
+just test-docs
+just pack-check
+just docs
 ```
 
 `ci` runs ESLint and Ruff security rules, formatting checks, schema validation,
 Node unit tests, Python installer and bundle tests, native GJS integration tests,
+documentation browser checks in Chromium and Firefox,
 secret scans of working files and Git history, and the build. Dependency checks can
 be run with `mise exec -- npm audit --ignore-scripts`.
+
+`setup` installs Chromium and Firefox for `test-docs`. The documentation suite
+checks accessibility in both color schemes, mobile layout, keyboard navigation,
+reduced motion, local assets, links, and project metadata. `docs` serves the static
+site at `http://127.0.0.1:8000`; there is no documentation build step or JavaScript.
 
 `test-live` uses temporary XDG directories, private D-Bus/dconf state, and a headless
 GNOME Shell to test startup rollback, populated menus through disable/re-enable,
@@ -173,7 +187,11 @@ desktop's enabled extensions. Both suites use local fixtures; actual Spotify
 authorization, audible playback, discovery from another device, and stream quality
 require a real account and manual verification.
 
-Build output is `dist/quickspot@napalm255.github.io.shell-extension.zip`, assembled
-from an explicit runtime file allowlist. See [AGENTS.md](AGENTS.md) for contribution
+`just build` writes `quickspot@napalm255.github.io.shell-extension.zip` at the
+repository root, assembled
+from an explicit runtime file allowlist using Python’s standard library.
+`just install` builds and installs that ZIP for the current user. `just pack-check`
+compares its files and contents with GNOME’s official packer and runs before
+`just test-live`. See [AGENTS.md](AGENTS.md) for contribution
 instructions. QuickSpot is [GPL-3.0-or-later](LICENSE); Soloist has separate upstream
 terms and third-party notices.
