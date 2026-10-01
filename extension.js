@@ -1,0 +1,290 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
+import St from 'gi://St';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import { PlayerController } from './modules/player.js';
+import { SpotifyClient } from './modules/spotify.js';
+import { playlistUri } from './modules/model.js';
+
+const QuickSpotButton = GObject.registerClass(
+    class QuickSpotButton extends PanelMenu.Button {
+        _init() {
+            super._init(0.5, 'QuickSpot');
+            const box = new St.BoxLayout({
+                style_class: 'panel-status-menu-box',
+            });
+            box.add_child(
+                new St.Icon({
+                    icon_name: 'audio-x-generic-symbolic',
+                    style_class: 'system-status-icon',
+                }),
+            );
+            this.trackLabel = new St.Label({
+                text: 'QuickSpot',
+                y_align: Clutter.ActorAlign.CENTER,
+                style_class: 'quickspot-track',
+            });
+            this.trackLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            box.add_child(this.trackLabel);
+            this.add_child(box);
+        }
+    },
+);
+
+export default class QuickSpotExtension extends Extension {
+    enable() {
+        try {
+            this._enable();
+        } catch (error) {
+            this.disable();
+            throw error;
+        }
+    }
+
+    _enable() {
+        this._settings = this.getSettings();
+        this._button = new QuickSpotButton();
+        this._player = new PlayerController(() => this._sync());
+        this._soloist = this._player.soloist;
+        this._serviceBusy = false;
+        this._spotify = new SpotifyClient();
+        this._playlists = [];
+        this._playlistItems = [];
+        this._libraryStatus = 'Connect Spotify in settings';
+        this._loading = false;
+        this._menu = this._button.menu;
+        this._status = new PopupMenu.PopupMenuItem('Soloist is stopped', {
+            reactive: false,
+        });
+        this._menu.addMenuItem(this._status);
+        this._previous = this._action('Previous', () =>
+            this._soloist.command('skip_prev'),
+        );
+        this._play = this._action('Play', () =>
+            this._soloist.command(
+                this._soloist.state.status === 'playing' ? 'pause' : 'play',
+            ),
+        );
+        this._next = this._action('Next', () =>
+            this._soloist.command('skip_next'),
+        );
+        this._activate = this._action('Use this device', () =>
+            this._soloist.command('activate'),
+        );
+        this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._discover = this._action('Discover Weekly', () => {
+            const playlist = this._discoverPlaylist();
+            if (!playlist) {
+                this.openPreferences();
+                return;
+            }
+            this._soloist.command('play', playlist.uri);
+        });
+        this._liked = this._action('Liked Songs', async () => {
+            const client = this._spotify;
+            const player = this._soloist;
+            const uri = await client.likedSongs();
+            if (this._spotify === client && this._soloist === player)
+                await player.command('play', uri);
+        });
+        this._library = new PopupMenu.PopupSubMenuMenuItem('Your playlists');
+        this._menu.addMenuItem(this._library);
+        this._action('Refresh playlists', () => this._loadPlaylists());
+        this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._togglePlayer = this._action('Set up player…', async () => {
+            if (this._serviceBusy) return;
+            this._serviceBusy = true;
+            const player = this._player;
+            this._sync();
+            try {
+                await player.refresh();
+                if (this._player !== player) return;
+                if (!player.presentation.canToggle)
+                    return this.openPreferences();
+                await player.control(
+                    player.presentation.running ? 'stop' : 'start',
+                );
+            } finally {
+                if (this._player === player) {
+                    this._serviceBusy = false;
+                    this._sync();
+                }
+            }
+        });
+        this._action('Open Spotify in browser', () =>
+            Gio.AppInfo.launch_default_for_uri(
+                'https://open.spotify.com/',
+                null,
+            ),
+        );
+        this._action('QuickSpot settings', () => this.openPreferences());
+        this._accountId = this._settings.connect(
+            'changed::account-generation',
+            () => {
+                this._spotify.destroy();
+                this._spotify = new SpotifyClient();
+                this._loading = false;
+                this._loadPlaylists();
+            },
+        );
+        this._discoverId = this._settings.connect(
+            'changed::discover-weekly',
+            () => this._sync(),
+        );
+        Main.panel.addToStatusArea(this.uuid, this._button);
+        this._player.start();
+        this._sync();
+        this._loadPlaylists();
+        console.debug('[quickspot] enabled');
+    }
+
+    _action(label, callback) {
+        const item = new PopupMenu.PopupMenuItem(label);
+        item.connect('activate', () => {
+            // Every UI action catches failures before they reach GNOME Shell.
+            void this._perform(callback);
+        });
+        this._menu.addMenuItem(item);
+        return item;
+    }
+
+    async _perform(callback) {
+        try {
+            await callback();
+        } catch (error) {
+            if (this._button) Main.notify('QuickSpot', error.message);
+        }
+    }
+
+    async _loadPlaylists() {
+        if (this._loading || !this._button) return;
+        this._loading = true;
+        const client = this._spotify;
+        this._libraryStatus = 'Loading playlists…';
+        this._renderLibrary();
+        try {
+            const playlists = await client.playlists();
+            if (this._spotify !== client) return;
+            this._playlists = playlists;
+            this._libraryStatus = playlists.length ? '' : 'No saved playlists';
+        } catch (error) {
+            if (this._spotify !== client) return;
+            this._libraryStatus = error.message;
+            this._playlists = [];
+        } finally {
+            if (this._spotify === client) {
+                this._loading = false;
+                this._renderLibrary();
+                this._sync();
+            }
+        }
+    }
+
+    _renderLibrary() {
+        if (!this._button) return;
+        this._library.menu.removeAll();
+        this._playlistItems = [];
+        if (this._libraryStatus)
+            this._library.menu.addMenuItem(
+                new PopupMenu.PopupMenuItem(this._libraryStatus, {
+                    reactive: false,
+                }),
+            );
+        for (const playlist of this._playlists) {
+            const item = new PopupMenu.PopupMenuItem(playlist.name);
+            item.setSensitive(this._soloist.state.loggedIn);
+            item.connect('activate', () => {
+                void this._perform(() =>
+                    this._soloist.command('play', playlist.uri),
+                );
+            });
+            this._library.menu.addMenuItem(item);
+            this._playlistItems.push(item);
+        }
+    }
+
+    _discoverPlaylist() {
+        const pinned = this._settings.get_string('discover-weekly');
+        if (pinned) {
+            try {
+                return { name: 'Discover Weekly', uri: playlistUri(pinned) };
+            } catch (_error) {
+                return null;
+            }
+        }
+        return (
+            this._playlists.find((item) => item.name === 'Discover Weekly') ??
+            null
+        );
+    }
+
+    _sync() {
+        if (!this._button) return;
+        const state = this._soloist.state;
+        const view = this._player.presentation;
+        this._status.label.text = state.error || view.title;
+        this._button.trackLabel.text =
+            state.active && state.title
+                ? [state.artist, state.title].filter(Boolean).join(' — ')
+                : 'QuickSpot';
+        this._button.accessible_name = this._button.trackLabel.text;
+        this._play.label.text = state.status === 'playing' ? 'Pause' : 'Play';
+        for (const item of [
+            this._previous,
+            this._play,
+            this._next,
+            this._activate,
+        ])
+            item.setSensitive(state.loggedIn);
+        this._discover.label.text = this._discoverPlaylist()
+            ? 'Discover Weekly'
+            : 'Set up Discover Weekly…';
+        this._discover.setSensitive(
+            !this._discoverPlaylist() || state.loggedIn,
+        );
+        this._liked.setSensitive(state.loggedIn);
+        this._togglePlayer.label.text = view.canToggle
+            ? `${view.toggleLabel} player`
+            : 'Set up player…';
+        this._togglePlayer.setSensitive(
+            !this._serviceBusy && !this._player.state.checking,
+        );
+        for (const item of this._playlistItems ?? [])
+            item.setSensitive(state.loggedIn);
+    }
+
+    disable() {
+        if (this._accountId) this._settings?.disconnect(this._accountId);
+        if (this._discoverId) this._settings?.disconnect(this._discoverId);
+        this._accountId = 0;
+        this._discoverId = 0;
+        this._player?.destroy();
+        this._spotify?.destroy();
+        this._button?.destroy();
+        this._settings = null;
+        this._button = null;
+        this._soloist = null;
+        this._player = null;
+        this._spotify = null;
+        this._playlists = [];
+        this._playlistItems = [];
+        this._menu = null;
+        this._library = null;
+        this._status = null;
+        this._previous = null;
+        this._play = null;
+        this._next = null;
+        this._activate = null;
+        this._discover = null;
+        this._liked = null;
+        this._togglePlayer = null;
+        this._loading = false;
+        console.debug('[quickspot] disabled');
+    }
+}

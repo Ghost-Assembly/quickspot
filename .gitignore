@@ -1,0 +1,9 @@
+*.swp
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+schemas/gschemas.compiled
+__pycache__/
+.ruff_cache/

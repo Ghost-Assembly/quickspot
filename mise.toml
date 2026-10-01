@@ -1,0 +1,10 @@
+# GJS and GNOME libraries come from the host to match GNOME Shell.
+[tools]
+node = "24"
+python = "3.14"
+just = "1.58.0"
+ruff = "0.16.9"
+gitleaks = "8.30.1"
+
+[env]
+UV_NO_MANAGED_PYTHON = "1"

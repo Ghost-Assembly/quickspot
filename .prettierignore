@@ -1,0 +1,6 @@
+.env*
+node_modules/
+dist/
+schemas/gschemas.compiled
+LICENSE
+package-lock.json
