@@ -3,6 +3,8 @@ import test from 'node:test';
 import {
     playlistUri,
     playlistPage,
+    discoverWeekly,
+    shuffleMode,
     tokenRecord,
     savedToken,
     playbackEvent,
@@ -16,6 +18,62 @@ import {
 
 const id = '37i9dQZF1DXcBWIGoYBM5M';
 const uri = `spotify:playlist:${id}`;
+
+test('shuffle follows player options and distinguishes Smart Shuffle', () => {
+    let state = playbackEvent(
+        {},
+        {
+            type: 'options_changed',
+            options: { shuffle: false, modes: { context_enhancement: 'NONE' } },
+        },
+    );
+    assert.equal(shuffleMode(state), 'off');
+    state = playbackEvent(state, {
+        type: 'options_changed',
+        options: { shuffle: true, modes: { context_enhancement: 'NONE' } },
+    });
+    assert.equal(shuffleMode(state), 'on');
+    state = playbackEvent(state, {
+        type: 'options_changed',
+        options: {
+            shuffle: true,
+            modes: { context_enhancement: 'RECOMMENDATION' },
+        },
+    });
+    assert.equal(shuffleMode(state), 'smart');
+    assert.equal(
+        shuffleMode(
+            playbackEvent(state, { type: 'auth_state', logged_in: false }),
+        ),
+        'unknown',
+    );
+    assert.throws(() =>
+        playbackEvent(state, {
+            type: 'options_changed',
+            options: { shuffle: 'true' },
+        }),
+    );
+    assert.equal(
+        shuffleMode(state),
+        'smart',
+        'Invalid update must not change the previous mode.',
+    );
+});
+
+test('Discover Weekly is automatic unless a manual playlist overrides it', () => {
+    const discovered = { name: '  discover   WEEKLY  ', uri };
+    assert.equal(
+        discoverWeekly([{ name: 'Another playlist', uri }, discovered]),
+        discovered,
+    );
+    assert.equal(discoverWeekly([]), null);
+    const override = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N';
+    assert.equal(discoverWeekly([discovered], override).uri, override);
+    assert.equal(discoverWeekly([discovered], '').uri, uri);
+    assert.throws(() =>
+        discoverWeekly([discovered], 'https://example.com/playlist/invalid'),
+    );
+});
 
 test('playlist links and URIs normalize to playable contexts', () => {
     for (const input of [
@@ -123,6 +181,8 @@ test('Soloist playback snapshots show track, artist, and volume', () => {
         duration: 0,
         position: null,
         context: '',
+        shuffle: null,
+        enhancement: null,
     });
 });
 

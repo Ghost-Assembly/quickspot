@@ -25,6 +25,7 @@ const PLAYER_XML = `<node><interface name="${PLAYER}">
     <property name="Rate" type="d" access="readwrite"/>
     <property name="Metadata" type="a{sv}" access="read"/>
     <property name="Volume" type="d" access="readwrite"/>
+    <property name="Shuffle" type="b" access="readwrite"/>
     <property name="Position" type="x" access="read"/>
     <property name="MinimumRate" type="d" access="read"/>
     <property name="MaximumRate" type="d" access="read"/>
@@ -80,6 +81,7 @@ export class MprisBridge {
             ['PlaybackStatus', new GLib.Variant('s', this.PlaybackStatus)],
             ['Metadata', new GLib.Variant('a{sv}', this.Metadata)],
             ['Volume', new GLib.Variant('d', this.Volume)],
+            ['Shuffle', new GLib.Variant('b', this.Shuffle)],
             ['CanPlay', new GLib.Variant('b', this.CanPlay)],
             ['CanPause', new GLib.Variant('b', this.CanPause)],
             ['CanGoNext', new GLib.Variant('b', this.CanGoNext)],
@@ -128,6 +130,14 @@ export class MprisBridge {
     }
     get Volume() {
         return this._client.state.volume / 100;
+    }
+    get Shuffle() {
+        return this._client.state.shuffle === true;
+    }
+    set Shuffle(value) {
+        if (typeof value !== 'boolean')
+            throw new Error('Invalid shuffle setting.');
+        void this._client.setShuffle(value).catch(() => {});
     }
     set Volume(value) {
         if (!Number.isFinite(value) || value < 0 || value > 1)

@@ -10,7 +10,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { PlayerController } from './modules/player.js';
 import { SpotifyClient } from './modules/spotify.js';
-import { playlistUri } from './modules/model.js';
+import { discoverWeekly, shuffleMode } from './modules/model.js';
 
 const QuickSpotButton = GObject.registerClass(
     class QuickSpotButton extends PanelMenu.Button {
@@ -53,6 +53,7 @@ export default class QuickSpotExtension extends Extension {
         this._player = new PlayerController(() => this._sync());
         this._soloist = this._player.soloist;
         this._serviceBusy = false;
+        this._shuffleBusy = false;
         this._spotify = new SpotifyClient();
         this._playlists = [];
         this._playlistItems = [];
@@ -77,6 +78,44 @@ export default class QuickSpotExtension extends Extension {
         this._activate = this._action('Use this device', () =>
             this._soloist.command('activate'),
         );
+        this._shuffle = new PopupMenu.PopupSubMenuMenuItem('Shuffle');
+        this._menu.addMenuItem(this._shuffle);
+        this._shuffleItems = new Map();
+        for (const [mode, label] of [
+            ['off', 'Off'],
+            ['on', 'On'],
+            ['smart', 'Smart Shuffle in Spotify…'],
+        ]) {
+            const item = new PopupMenu.PopupMenuItem(label);
+            item.connect('activate', () => {
+                if (mode === 'smart') {
+                    void this._perform(() => {
+                        Main.notify(
+                            'QuickSpot',
+                            'Enable Smart Shuffle in Spotify with this speaker selected. On your phone, tap Shuffle until Smart Shuffle is on.',
+                        );
+                        this._openSpotify();
+                    });
+                    return;
+                }
+                void this._perform(async () => {
+                    if (this._shuffleBusy) return;
+                    const player = this._soloist;
+                    this._shuffleBusy = true;
+                    this._sync();
+                    try {
+                        await player.setShuffle(mode === 'on');
+                    } finally {
+                        if (this._soloist === player) {
+                            this._shuffleBusy = false;
+                            this._sync();
+                        }
+                    }
+                });
+            });
+            this._shuffle.menu.addMenuItem(item);
+            this._shuffleItems.set(mode, item);
+        }
         this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._discover = this._action('Discover Weekly', () => {
             const playlist = this._discoverPlaylist();
@@ -84,7 +123,7 @@ export default class QuickSpotExtension extends Extension {
                 this.openPreferences();
                 return;
             }
-            this._soloist.command('play', playlist.uri);
+            return this._soloist.command('play', playlist.uri);
         });
         this._liked = this._action('Liked Songs', async () => {
             const client = this._spotify;
@@ -154,6 +193,13 @@ export default class QuickSpotExtension extends Extension {
         return item;
     }
 
+    _openSpotify() {
+        const uri = Gio.AppInfo.get_default_for_uri_scheme('spotify')
+            ? 'spotify:'
+            : 'https://open.spotify.com/';
+        Gio.AppInfo.launch_default_for_uri(uri, null);
+    }
+
     async _perform(callback) {
         try {
             await callback();
@@ -210,18 +256,14 @@ export default class QuickSpotExtension extends Extension {
     }
 
     _discoverPlaylist() {
-        const pinned = this._settings.get_string('discover-weekly');
-        if (pinned) {
-            try {
-                return { name: 'Discover Weekly', uri: playlistUri(pinned) };
-            } catch (_error) {
-                return null;
-            }
+        try {
+            return discoverWeekly(
+                this._playlists,
+                this._settings.get_string('discover-weekly'),
+            );
+        } catch (_error) {
+            return null;
         }
-        return (
-            this._playlists.find((item) => item.name === 'Discover Weekly') ??
-            null
-        );
     }
 
     _sync() {
@@ -235,6 +277,25 @@ export default class QuickSpotExtension extends Extension {
                 : 'QuickSpot';
         this._button.accessible_name = this._button.trackLabel.text;
         this._play.label.text = state.status === 'playing' ? 'Pause' : 'Play';
+        const mode = shuffleMode(state);
+        const shuffleLabels = new Map([
+            ['unknown', 'Unavailable'],
+            ['off', 'Off'],
+            ['on', 'On'],
+            ['smart', 'Smart Shuffle'],
+        ]);
+        this._shuffle.label.text = `Shuffle: ${shuffleLabels.get(mode)}`;
+        this._shuffle.setSensitive(state.loggedIn && state.active);
+        for (const [value, item] of this._shuffleItems) {
+            item.setOrnament(
+                value === mode
+                    ? PopupMenu.Ornament.CHECK
+                    : PopupMenu.Ornament.NONE,
+            );
+            item.setSensitive(
+                !this._shuffleBusy && (value === 'smart' || mode !== 'unknown'),
+            );
+        }
         for (const item of [
             this._previous,
             this._play,
@@ -281,6 +342,9 @@ export default class QuickSpotExtension extends Extension {
         this._play = null;
         this._next = null;
         this._activate = null;
+        this._shuffle = null;
+        this._shuffleItems = null;
+        this._shuffleBusy = false;
         this._discover = null;
         this._liked = null;
         this._togglePlayer = null;

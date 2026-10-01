@@ -67,8 +67,18 @@ async function settled(predicate) {
 }
 
 class TestPreferences extends Preferences {
-    async _lookupSecret() {
-        return null;
+    async _lookupSecret(kind) {
+        return kind === 'tokens' ? 'fake-saved-login' : null;
+    }
+
+    _createSpotify() {
+        this.playlists = [
+            {
+                name: 'Discover Weekly',
+                uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
+            },
+        ];
+        return { playlists: async () => this.playlists, destroy() {} };
     }
 
     _createPlayer(onChange) {
@@ -121,6 +131,54 @@ async function testDynamicSettings() {
     try {
         testPrefs.fillPreferencesWindow(testWindow);
         testWindow.present();
+        const discovery = row(testWindow, 'Playlist discovery');
+        await settled(
+            () =>
+                discovery.subtitle ===
+                'Found automatically in your Spotify library.',
+        );
+        const manual = row(testWindow, 'Manual override (optional)');
+        const weekly = row(testWindow, 'Playlist link or URI (optional)');
+        check(
+            !manual.expanded && weekly.text === '',
+            'Automatic discovery required a manual URL.',
+        );
+        testPrefs.playlists = [];
+        button(discovery, 'Refresh').emit('clicked');
+        await settled(
+            () =>
+                discovery.subtitle.startsWith('Not found.') &&
+                button(discovery, 'Refresh').sensitive,
+        );
+        testPrefs.playlists = [
+            {
+                name: 'Discover Weekly',
+                uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
+            },
+        ];
+        button(discovery, 'Refresh').emit('clicked');
+        await settled(
+            () =>
+                discovery.subtitle.startsWith('Found automatically') &&
+                button(discovery, 'Refresh').sensitive,
+        );
+        weekly.text = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N';
+        button(weekly, 'Save').emit('clicked');
+        await settled(
+            () =>
+                discovery.subtitle.startsWith('Using a manual') &&
+                button(discovery, 'Use automatic').sensitive,
+        );
+        button(discovery, 'Use automatic').emit('clicked');
+        await settled(
+            () =>
+                weekly.text === '' &&
+                discovery.subtitle.startsWith('Found automatically') &&
+                button(discovery, 'Refresh').sensitive,
+        );
+        print(
+            'PASS: automatic Discover Weekly detection, missing-playlist guidance, refresh, and override reset',
+        );
         const runtime = row(testWindow, 'Player');
         check(
             runtime.activatable_widget.label === 'Start' &&

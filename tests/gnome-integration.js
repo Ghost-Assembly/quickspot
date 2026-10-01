@@ -12,7 +12,7 @@ import {
 } from '../modules/spotify.js';
 import { paths, writeService, run } from '../modules/platform.js';
 import { importCredentials } from '../modules/credentials.js';
-import { likedSongsUri } from '../modules/model.js';
+import { likedSongsUri, shuffleMode } from '../modules/model.js';
 import { MprisBridge, MPRIS_NAME, MPRIS_PATH } from '../modules/mpris.js';
 import { PlayerController } from '../modules/player.js';
 
@@ -101,6 +101,16 @@ async function testSoloist() {
                             is_active: true,
                         }),
                     );
+                if (command.command === 'set_shuffle')
+                    connection.send_text(
+                        JSON.stringify({
+                            type: 'options_changed',
+                            options: {
+                                shuffle: command.enabled,
+                                modes: { context_enhancement: 'NONE' },
+                            },
+                        }),
+                    );
                 if (['play', 'pause'].includes(command.command))
                     connection.send_text(
                         JSON.stringify({
@@ -128,6 +138,10 @@ async function testSoloist() {
                     item: {
                         uri: 'spotify:track:37i9dQZF1DXcBWIGoYBM5M',
                         decorations: { identity: { name: 'Native test song' } },
+                    },
+                    options: {
+                        shuffle: false,
+                        modes: { context_enhancement: 'NONE' },
                     },
                 }),
             );
@@ -238,6 +252,51 @@ async function testSoloist() {
         check(
             commands.at(-1).command === 'skip_next',
             'MPRIS Next did not reach Soloist.',
+        );
+        await call(
+            'org.freedesktop.DBus.Properties',
+            'Set',
+            new GLib.Variant('(ssv)', [
+                'org.mpris.MediaPlayer2.Player',
+                'Shuffle',
+                new GLib.Variant('b', true),
+            ]),
+        );
+        await waitFor(() => client.state.shuffle === true);
+        check(
+            commands.at(-1).command === 'set_shuffle' &&
+                commands.at(-1).enabled === true,
+            'Desktop shuffle did not reach Soloist.',
+        );
+        await client.setShuffle(false);
+        await waitFor(() => shuffleMode(client.state) === 'off');
+        socket.send_text(
+            JSON.stringify({
+                type: 'options_changed',
+                options: {
+                    shuffle: true,
+                    modes: { context_enhancement: 'RECOMMENDATION' },
+                },
+            }),
+        );
+        await waitFor(() => shuffleMode(client.state) === 'smart');
+        bridge.sync();
+        const [shuffled] = (
+            await call(
+                'org.freedesktop.DBus.Properties',
+                'Get',
+                new GLib.Variant('(ss)', [
+                    'org.mpris.MediaPlayer2.Player',
+                    'Shuffle',
+                ]),
+            )
+        ).recursiveUnpack();
+        check(
+            shuffled === true,
+            'Smart Shuffle was not exposed as shuffled playback.',
+        );
+        print(
+            'PASS: ordinary shuffle control, remote Smart Shuffle updates, and MPRIS shuffle',
         );
         print(
             'PASS: real MPRIS discovery, metadata, play/pause, and next over a private D-Bus session',

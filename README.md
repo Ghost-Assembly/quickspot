@@ -49,9 +49,11 @@ are host packages; development tooling is managed by mise.
    Connect the same account you paired with the speaker. **Liked Songs** resolves
    that account's playable collection; Spotify's `spotify:collection:tracks` app
    navigation URI is not accepted by Soloist's playback API.
-6. Save **Discover Weekly** to your Spotify library, then refresh playlists in
-   QuickSpot. For localized names or a playlist absent from the API response, pin
-   its playlist link in preferences.
+6. Save **Discover Weekly** to your Spotify library once. QuickSpot detects it
+   automatically when it loads your playlists. **Library → Discover Weekly** shows
+   whether it was found and has a **Refresh** button. No playlist URL is required.
+   For a localized name or a playlist absent from the API response, expand
+   **Manual override (optional)**. **Use automatic** removes an existing override.
 
 For this checkout, `mise exec -- just import-credentials` imports the local `.env`
 without printing credential values. The extension ZIP excludes that file.
@@ -67,6 +69,14 @@ media controls so desktop play/pause, previous/next keys, and QuickMusic can con
 QuickSpot. Playing from QuickSpot activates this speaker before sending playback.
 Media controls remain available when the panel extension is disabled while the
 player service is running and paired.
+
+The panel's **Shuffle** menu controls ordinary shuffle and follows the actual player
+state, including changes from Spotify. **Smart Shuffle in Spotify…** opens Spotify;
+select this speaker and enable Smart Shuffle there. QuickSpot displays Smart Shuffle
+when Soloist reports shuffle with recommendation enhancement. Soloist's current
+[local API](https://developer.spotify.com/documentation/soloist/reference/websocket-api)
+provides an on/off shuffle command but no Smart Shuffle activation command. Desktop
+media clients can also read and change ordinary shuffle through MPRIS.
 
 ## Device missing from Spotify
 

@@ -24,6 +24,8 @@ export class SoloistClient {
             artist: '',
             volume: 0,
             error: '',
+            shuffle: null,
+            enhancement: null,
         };
         this._timer = 0;
     }
@@ -181,6 +183,18 @@ export class SoloistClient {
         );
     }
 
+    setShuffle(enabled) {
+        if (typeof enabled !== 'boolean')
+            return Promise.reject(new Error('Invalid shuffle setting.'));
+        return this._enqueue(() =>
+            this._dispatch({
+                type: 'command',
+                command: 'set_shuffle',
+                enabled,
+            }),
+        );
+    }
+
     _enqueue(callback) {
         const result = this._commands.then(callback);
         this._commands = result.catch(() => {});
@@ -256,6 +270,8 @@ export class SoloistClient {
             duration: 0,
             position: null,
             context: '',
+            shuffle: null,
+            enhancement: null,
         };
         this._onChange?.();
     }

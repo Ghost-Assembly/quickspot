@@ -155,6 +155,25 @@ export function playlistPage(value) {
     return { items, next: value.next };
 }
 
+export function discoverWeekly(playlists, override = '') {
+    if (override)
+        return { name: 'Discover Weekly', uri: playlistUri(override) };
+    return (
+        playlists.find(
+            (item) =>
+                item.name.trim().replace(/\s+/gu, ' ').toLowerCase() ===
+                'discover weekly',
+        ) ?? null
+    );
+}
+
+export function shuffleMode(state) {
+    if (state.shuffle === false) return 'off';
+    if (state.shuffle !== true) return 'unknown';
+    // Soloist exposes Smart Shuffle's recommendation enhancement separately.
+    return state.enhancement === 'RECOMMENDATION' ? 'smart' : 'on';
+}
+
 export function tokenRecord(value, previousRefresh = '', now = Date.now()) {
     if (
         !value ||
@@ -211,6 +230,8 @@ export function playbackEvent(state, event) {
             next.duration = 0;
             next.position = null;
             next.context = '';
+            next.shuffle = null;
+            next.enhancement = null;
         }
     }
     if (['playback_state', 'playback_changed'].includes(event.type)) {
@@ -268,6 +289,16 @@ export function playbackEvent(state, event) {
             /^spotify:[A-Za-z0-9:._%-]{1,512}$/.test(uri)
                 ? uri
                 : '';
+    }
+    if (['playback_state', 'options_changed'].includes(event.type)) {
+        const options = event.options;
+        if (options && typeof options.shuffle !== 'boolean')
+            throw new Error('Invalid shuffle state.');
+        next.shuffle = options?.shuffle ?? null;
+        const enhancement = options?.modes?.context_enhancement;
+        next.enhancement = ['NONE', 'RECOMMENDATION'].includes(enhancement)
+            ? enhancement
+            : null;
     }
     return next;
 }

@@ -3,7 +3,12 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk?version=4.0';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-import { deviceName, playlistUri, soloistKey } from './modules/model.js';
+import {
+    deviceName,
+    discoverWeekly,
+    playlistUri,
+    soloistKey,
+} from './modules/model.js';
 import { lookupSecret, storeSecret, clearSecret } from './modules/secrets.js';
 import {
     SpotifyClient,
@@ -22,10 +27,14 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         return new PlayerController(onChange);
     }
 
+    _createSpotify() {
+        return new SpotifyClient();
+    }
+
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         const cancel = new Gio.Cancellable();
-        const spotify = new SpotifyClient();
+        const spotify = this._createSpotify();
         const login = new SpotifyLogin(spotify);
         let closed = false;
         let busy = false;
@@ -33,6 +42,10 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         let librarySaved = false;
         let accountChanged = false;
         let loggingIn = false;
+        let discoveryLoading = false;
+        let discoveryRequest = 0;
+        let discoveryDetail =
+            'Connect your Spotify library to find Discover Weekly.';
         const controls = [];
         const page = new Adw.PreferencesPage({
             title: 'Player',
@@ -103,13 +116,16 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             return row;
         };
         const launch = (uri) => Gio.AppInfo.launch_default_for_uri(uri, null);
-        const changedAccount = () => {
-            accountChanged = true;
+        const reloadLibrary = () => {
             if (!closed)
                 settings.set_uint(
                     'account-generation',
                     (settings.get_uint('account-generation') + 1) % 0xffffffff,
                 );
+        };
+        const changedAccount = () => {
+            accountChanged = true;
+            reloadLibrary();
         };
 
         const installation = action(
@@ -329,6 +345,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             if (closed) return;
             librarySaved = true;
             changedAccount();
+            await refreshDiscovery();
             return 'Playlist library connected.';
         });
         const cancelLogin = new Gtk.Button({
@@ -345,6 +362,10 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 await clearSecret('tokens', cancel);
                 if (closed) return;
                 librarySaved = false;
+                discoveryRequest++;
+                discoveryLoading = false;
+                discoveryDetail =
+                    'Connect your Spotify library to find Discover Weekly.';
                 changedAccount();
                 return 'Saved playlist login removed.';
             },
@@ -362,10 +383,42 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         const discovery = new Adw.PreferencesGroup({
             title: 'Discover Weekly',
             description:
-                'Save Discover Weekly in Spotify for automatic detection, or pin its link for localized names.',
+                'QuickSpot finds Discover Weekly automatically in your saved Spotify playlists. Save it in Spotify once, then refresh here.',
         });
-        const weekly = entry(discovery, 'Playlist link or URI');
+        const detection = action(
+            discovery,
+            'Playlist discovery',
+            discoveryDetail,
+            'Refresh',
+            async () => {
+                await refreshDiscovery(true);
+                return detection.subtitle;
+            },
+            () => librarySaved && !discoveryLoading,
+        );
+        const automatic = button(
+            detection,
+            'Use automatic',
+            () => {
+                settings.set_string('discover-weekly', '');
+                weekly.text = '';
+                reloadLibrary();
+                return 'Automatic discovery enabled.';
+            },
+            () => Boolean(settings.get_string('discover-weekly')),
+        );
+        const manual = new Adw.ExpanderRow({
+            title: 'Manual override (optional)',
+            subtitle:
+                'For a localized name or a playlist Spotify does not list.',
+        });
+        const weekly = new Adw.EntryRow({
+            title: 'Playlist link or URI (optional)',
+        });
+        manual.add_row(weekly);
+        discovery.add(manual);
         weekly.text = settings.get_string('discover-weekly');
+        manual.expanded = Boolean(weekly.text);
         button(weekly, 'Save', () => {
             settings.set_string(
                 'discover-weekly',
@@ -374,6 +427,30 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             return 'Discover Weekly shortcut saved.';
         });
         libraryPage.add(discovery);
+
+        async function refreshDiscovery(notifyPanel = false) {
+            if (closed || !librarySaved) return;
+            const request = ++discoveryRequest;
+            discoveryLoading = true;
+            discoveryDetail = 'Looking for Discover Weekly…';
+            sync();
+            try {
+                const lists = await spotify.playlists();
+                if (closed || request !== discoveryRequest) return;
+                discoveryDetail = discoverWeekly(lists)
+                    ? 'Found automatically in your Spotify library.'
+                    : 'Not found. Save Discover Weekly in Spotify, then choose Refresh.';
+                if (notifyPanel) reloadLibrary();
+            } catch (error) {
+                if (closed || request !== discoveryRequest) return;
+                discoveryDetail = error.message;
+            } finally {
+                if (!closed && request === discoveryRequest) {
+                    discoveryLoading = false;
+                    sync();
+                }
+            }
+        }
 
         function sync() {
             if (closed) return;
@@ -402,6 +479,10 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 : 'Not connected';
             connect.label = librarySaved ? 'Reconnect' : 'Connect';
             cancelLogin.visible = loggingIn;
+            detection.subtitle = settings.get_string('discover-weekly')
+                ? 'Using a manual playlist override. Choose Use automatic to remove it.'
+                : discoveryDetail;
+            automatic.visible = Boolean(settings.get_string('discover-weekly'));
             updating = true;
             autostart.active = player.state.autostart;
             autostart.sensitive = !busy && player.state.serviceLoaded;
@@ -433,6 +514,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 if (!clientId.text && id) clientId.text = id;
                 if (!accountChanged) librarySaved = Boolean(tokens);
                 sync();
+                if (!accountChanged) await refreshDiscovery();
             } catch (_error) {
                 if (!closed) {
                     message.visible = true;

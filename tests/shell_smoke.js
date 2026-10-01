@@ -1,5 +1,6 @@
 // Loaded only in the isolated GNOME session by scripts/check_live.py.
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import QuickSpotExtension from './quickspot.js';
 import { SpotifyClient } from './modules/spotify.js';
 
@@ -10,6 +11,7 @@ function check(condition, message) {
 // Exercise a populated menu without contacting Spotify or the user's keyring.
 SpotifyClient.prototype.playlists = async () => [
     { name: 'Test playlist', uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M' },
+    { name: 'Discover Weekly', uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N' },
 ];
 
 export default class ShellSmoke extends QuickSpotExtension {
@@ -40,6 +42,9 @@ export default class ShellSmoke extends QuickSpotExtension {
             active: true,
             title: 'Test song',
             artist: 'Test artist',
+            loggedIn: true,
+            shuffle: false,
+            enhancement: 'NONE',
         };
         this._sync();
         check(
@@ -50,11 +55,28 @@ export default class ShellSmoke extends QuickSpotExtension {
             this._button.accessible_name === 'Test artist — Test song',
             'Now playing is missing an accessible label.',
         );
+        check(
+            this._shuffle.label.text === 'Shuffle: Off',
+            'Shuffle control did not reflect disabled shuffle.',
+        );
+        this._soloist.state.shuffle = true;
+        this._soloist.state.enhancement = 'RECOMMENDATION';
+        this._sync();
+        check(
+            this._shuffle.label.text === 'Shuffle: Smart Shuffle' &&
+                this._shuffleItems.get('smart')._ornament ===
+                    PopupMenu.Ornament.CHECK,
+            'Smart Shuffle indicator did not follow player state.',
+        );
         this._soloist.state.active = false;
         this._sync();
         check(
             this._button.trackLabel.text === 'QuickSpot',
             'Inactive device left stale music in the top bar.',
+        );
+        check(
+            !this._shuffle.sensitive,
+            'Inactive speaker left shuffle controls enabled.',
         );
         console.debug('[quickspot-test] top bar metadata passed');
     }
@@ -68,8 +90,14 @@ export default class ShellSmoke extends QuickSpotExtension {
         await super._loadPlaylists();
         if (!this._button) return;
         check(
-            this._playlistItems.length === 1,
+            this._playlistItems.length === 2,
             'Playlist menu did not populate.',
+        );
+        check(
+            this._discoverPlaylist()?.uri ===
+                'spotify:playlist:37i9dQZF1DXcBWIGoYBM5N' &&
+                this._discover.label.text === 'Discover Weekly',
+            'Discover Weekly required a manual URL despite being in the library.',
         );
         console.debug('[quickspot-test] populated menu passed');
     }

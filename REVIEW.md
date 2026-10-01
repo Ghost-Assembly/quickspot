@@ -14,6 +14,16 @@ QuickTS, and QuickTiler. No runtime dependencies were added.
 - **Redundant controls:** separate Start/Stop and Enable/Disable rows are replaced
   by a dynamic player control and a Start at login switch. Install changes to
   Update or Repair. Preferences separate speaker setup from optional playlist login.
+- **Discover Weekly setup:** automatic library detection now has a visible status
+  and Refresh action in preferences. The manual URL field is an optional override;
+  Use automatic clears it. Both panel and preferences share the same detection
+  logic, including case and whitespace normalization. Spotify must return the
+  saved playlist; a live check found no Discover Weekly in this account's list.
+- **Shuffle:** the panel and MPRIS now expose ordinary shuffle control. The panel
+  distinguishes Smart Shuffle using reported recommendation enhancement and follows
+  remote option changes. Smart Shuffle activation remains in Spotify because the
+  public Soloist API and installed CLI expose only shuffle on/off; the UI labels
+  that handoff explicitly.
 - **Invalid Liked Songs URI:** the earlier test only checked that a command was sent.
   A live reproduction showed that Soloist rejects `spotify:collection:tracks`.
   Liked Songs now resolves `spotify:user:<id>:collection` from the library account's
