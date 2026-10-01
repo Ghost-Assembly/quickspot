@@ -135,8 +135,16 @@ async function testDynamicSettings() {
         name.text = 'Discover Weekly';
         playlist.text = '37i9dQZF1DXcBWIGoYBM5M';
         button(playlist, 'Add').emit('clicked');
+        check(
+            !name.sensitive && !playlist.sensitive,
+            'Pending operation allowed editing the inputs it will clear.',
+        );
         await settled(
             () => name.text === '' && button(playlist, 'Add').sensitive,
+        );
+        check(
+            name.sensitive && playlist.sensitive,
+            'Finished operation left playlist inputs disabled.',
         );
         check(
             saved().length === 1 &&
@@ -234,6 +242,12 @@ async function testDynamicSettings() {
         check(
             row(testWindow, 'QuickSpot').subtitle === 'Test service failure',
             'Service failure was hidden.',
+        );
+        automatic.active = false;
+        await settled(() => automatic.sensitive);
+        check(
+            automatic.active && testPrefs.player.state.autostart,
+            'Failed autostart change left the switch out of sync with the service.',
         );
         testWindow.close();
         check(

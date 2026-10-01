@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a QuickSpot extension bundle from an explicit runtime allowlist."""
 
+import json
 import shutil
 import subprocess
 import tempfile
@@ -28,16 +29,25 @@ RUNTIME_FILES = [
 ]
 
 
-def main() -> None:
-    """Stage runtime files only; GNOME builds and validates the schema."""
-    output = ROOT / "dist"
+def build(root: Path = ROOT) -> Path:
+    """Validate schemas and package only the staged runtime files."""
+    output = root / "dist"
     output.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="quickspot-build-") as work:
         staging = Path(work)
         for name in RUNTIME_FILES:
             target = staging / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(ROOT / name, target)
+            shutil.copy2(root / name, target)
+        subprocess.run(  # noqa: S603 -- fixed executable and staging directory
+            [
+                "/usr/bin/glib-compile-schemas",
+                "--strict",
+                "--dry-run",
+                str(staging / "schemas"),
+            ],
+            check=True,
+        )
         subprocess.run(  # noqa: S603 -- fixed executable and allowlisted sources
             [
                 "/usr/bin/gnome-extensions",
@@ -51,8 +61,9 @@ def main() -> None:
             ],
             check=True,
         )
-    print("Built dist/quickspot@napalm255.github.io.shell-extension.zip")
+    metadata = json.loads((root / "metadata.json").read_text())
+    return output / f"{metadata['uuid']}.shell-extension.zip"
 
 
 if __name__ == "__main__":
-    main()
+    print(f"Built {build().relative_to(ROOT)}")

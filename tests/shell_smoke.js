@@ -159,7 +159,13 @@ export default class ShellSmoke extends QuickSpotExtension {
     }
 
     async _loadPlaylists() {
-        await super._loadPlaylists();
+        const loading = super._loadPlaylists();
+        if (this._button && this._loading)
+            check(
+                this._playlistItems.length === 0,
+                'Loading playlists retained entries from the previous library.',
+            );
+        await loading;
         if (!this._button) return;
         check(
             this._playlistItems.length === 2,

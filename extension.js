@@ -194,10 +194,12 @@ export default class QuickSpotExtension extends Extension {
     }
 
     async _perform(callback) {
+        const button = this._button;
         try {
             await callback();
         } catch (error) {
-            if (this._button) Main.notify('QuickSpot', error.message);
+            if (button && this._button === button)
+                Main.notify('QuickSpot', error.message);
         }
     }
 
@@ -205,6 +207,7 @@ export default class QuickSpotExtension extends Extension {
         if (this._loading || !this._button) return;
         this._loading = true;
         const client = this._spotify;
+        this._playlists = [];
         this._libraryStatus = 'Loading playlists…';
         this._renderLibrary();
         try {

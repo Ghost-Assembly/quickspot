@@ -34,9 +34,10 @@ test:
     python3 -m unittest discover -s tests -p 'test_*.py' -v
     python3 scripts/run_native.py
 
-# Scan for accidentally included secrets
+# Scan working files and Git history for accidentally included secrets
 security:
     gitleaks dir --redact --no-banner --config .gitleaks.toml .
+    gitleaks git --redact --no-banner .
 
 # Build the extension ZIP without credentials or Spotify binaries
 build:

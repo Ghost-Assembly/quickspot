@@ -3,4 +3,4 @@ useDefault = true
 
 [[allowlists]]
 description = "Local ignored credentials and generated dependencies are excluded from packaging"
-paths = ['(^|/)\.env(\..*)?$', '(^|/)node_modules/', '(^|/)dist/', '(^|/)\.git/']
+paths = ['(^|/)\.env$', '(^|/)node_modules/', '(^|/)dist/', '(^|/)\.git/']

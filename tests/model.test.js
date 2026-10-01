@@ -225,6 +225,17 @@ test('invalid playback updates fail without changing the prior state', () => {
     assert.deepEqual(state, { volume: 50 });
 });
 
+test('track changes discard the previous track position until a new anchor arrives', () => {
+    const state = {
+        position: { position_ms: 120000, timestamp_ms: 1000, speed: 1 },
+    };
+
+    const changed = playbackEvent(state, { type: 'track_changed', item: null });
+
+    assert.equal(changed.position, null);
+    assert.equal(state.position.position_ms, 120000);
+});
+
 test('credential import treats shell syntax as literal text', () => {
     const values = parseEnvironment(
         '# comment\nexport SPOTIFY_CLIENT_ID="example"\nSPOTIFY_SOLOIST_KEY=\'$(touch /tmp/no)\'\n',

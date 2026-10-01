@@ -2,18 +2,45 @@
 """Install Spotify's official Soloist build in the user's data directory."""
 
 import argparse
+import http.client
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ARCHITECTURES = {"x86_64": "x86_64", "aarch64": "arm64", "armv7l": "arm32"}
 MAX_SIZE = 128 * 1024 * 1024
 FILES = {"soloist", "THIRD_PARTY_LICENSES.txt", "CHANGELOG.md"}
+
+
+class SpotifyRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Keep redirected downloads on Spotify's official HTTPS origin."""
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: http.client.HTTPResponse | None,
+        code: int,
+        msg: str,
+        headers: http.client.HTTPMessage | dict[str, str],
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        destination = urlsplit(newurl)
+        if (
+            destination.scheme != "https"
+            or destination.hostname != "soloist-builds.spotifycdn.com"
+            or destination.port not in (None, 443)
+            or destination.username is not None
+            or destination.password is not None
+        ):
+            raise ValueError("Unexpected Spotify download redirect.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def install_archive(archive: Path, destination: Path) -> None:
@@ -42,9 +69,13 @@ def install_archive(archive: Path, destination: Path) -> None:
         binary = staging / "soloist"
         binary.chmod(0o700)
         # Only the allowlisted binary from Spotify's official HTTPS archive runs.
-        subprocess.run(  # noqa: S603
+        result = subprocess.run(  # noqa: S603
             [str(binary), "--version"], check=True, capture_output=True, timeout=10
         )
+        if not re.match(
+            rb"soloist [A-Za-z0-9][A-Za-z0-9.+-]{0,127}(?:\s|$)", result.stdout.strip()
+        ):
+            raise ValueError("Downloaded player did not report a Soloist version.")
         for name in sorted(seen - {"soloist"}):
             os.replace(staging / name, destination / name)
         os.replace(binary, destination / "soloist")
@@ -63,11 +94,12 @@ def main() -> None:
         / "quickspot"
     )
     url = f"https://soloist-builds.spotifycdn.com/soloist_release_{architecture}.tar.gz"
+    opener = urllib.request.build_opener(SpotifyRedirectHandler())
     with tempfile.TemporaryDirectory(prefix="quickspot-download-") as work:
         archive = Path(work) / "soloist.tar.gz"
         # The URL is constructed from a fixed HTTPS origin and CPU allowlist.
         with (
-            urllib.request.urlopen(url, timeout=30) as response,
+            opener.open(url, timeout=30) as response,
             archive.open("xb") as out,
         ):
             size = 0

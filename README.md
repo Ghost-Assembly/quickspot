@@ -1,196 +1,179 @@
 # QuickSpot
 
-Spotify in the GNOME panel, powered by Spotify Soloist. Part of the
-[Ghost Assembly](https://github.com/Ghost-Assembly) family.
+A Spotify speaker and playback controls for **GNOME Shell 50**, powered by
+[Spotify Soloist](https://developer.spotify.com/documentation/soloist). Part of
+[Ghost Assembly](https://github.com/Ghost-Assembly).
 
-QuickSpot targets **GNOME Shell 50**. It provides now playing information,
-play/pause, previous/next, device activation, Liked Songs, an automatically loaded playlist
-menu, named playlist shortcuts, and an action to open Spotify in your default
-browser. Preferences can install or update the official Soloist binary and manage
-its user service.
+QuickSpot shows the active artist and song in the top bar and provides play/pause,
+previous/next, device activation, shuffle, Liked Songs, saved playlists, and named
+playlist shortcuts. Preferences install or update Soloist and manage its systemd
+user service. The service exports MPRIS controls for desktop media keys and other
+media clients, even while the extension is disabled.
 
-## Audio quality
+## Requirements
 
-[Soloist supports lossless audio up to 24-bit/44.1 kHz with Premium](https://github.com/spotify/soloist).
-However, its current [CLI](https://developer.spotify.com/documentation/soloist/reference/command-line)
-and [WebSocket API](https://developer.spotify.com/documentation/soloist/reference/websocket-api)
-provide no audio quality control, configured quality level, or active bitrate report. QuickSpot cannot set a
-lossless default or offer a working bitrate selector through those interfaces.
+- GNOME Shell 50 with GJS, libsecret, libsoup 3, GTK 4, and libadwaita.
+- Python 3.12 or newer, a graphical systemd user session, and PipeWire or PulseAudio.
+- A Spotify Premium account and your own Soloist API key.
+- An x86_64, aarch64, or armv7l Linux system for the official Soloist download.
+- [mise](https://mise.jdx.dev) for development tools and installation from source.
 
-Select QuickSpot in the Spotify app's Connect device menu, then choose
-**Change quality settings → Lossless**. You can choose other quality levels there.
-See [Spotify's Connect guide](https://support.spotify.com/us/article/spotify-connect/).
-QuickSpot does not label playback as lossless without evidence from the player.
+GNOME libraries come from the host. `mise.toml` pins development runtimes and tools;
+Python development checks use the pinned interpreter.
 
-## Install and connect
+## Install
 
-Requires GNOME 50, GJS, libsecret, libsoup 3, GTK 4, libadwaita, Python 3.12 or newer,
-a graphical systemd user session, and PipeWire or PulseAudio. These GNOME libraries
-are host packages; development tooling is managed by mise.
+From this checkout:
 
-1. Run `mise install`, `mise exec -- just setup`, and `mise exec -- just install`.
-2. Log out and back in so GNOME discovers the new extension. Run `just enable`,
-   then `just prefs`. After updating a loaded extension, log out and back in again
-   to load its new panel code; opening preferences alone does not reload GNOME Shell.
-3. On the **Player** page, choose **Install** and save your own
-   [Soloist API key](https://developer.spotify.com/dashboard/soloist). You can import
-   an `.env` file containing `SPOTIFY_SOLOIST_KEY` instead. Choose **Start**.
-   The same control becomes **Stop** while the service is running.
-4. Wait for **Ready to pair**, then open Spotify on your phone or desktop on the
-   same local network. Play something, open the device menu, and select **QuickSpot**
-   (or the device name you saved). The web player cannot discover an unpaired
-   local speaker. The status changes when pairing succeeds.
-5. To play Liked Songs or browse saved playlists, open the **Library** page. In your
-   [Spotify developer app](https://developer.spotify.com/dashboard), register
-   `http://127.0.0.1:43821/callback` as its redirect URI, enter your client ID, and choose
-   **Connect**. Keep preferences open to finish authorization, or choose **Cancel**.
-   An `.env` import also accepts `SPOTIFY_CLIENT_ID`. No client secret is needed.
-   Development-mode apps must allow your Spotify account.
-   Connect the same account you paired with the speaker. **Liked Songs** resolves
-   that account's playable collection; Spotify's `spotify:collection:tracks` app
-   navigation URI is not accepted by Soloist's playback API.
-6. In **Library → Playlist shortcuts**, enter a name and the playlist's 22-character
-   ID, Spotify link, or URI, then choose **Add**. This works for Discover Weekly and
-   other playlists even when Spotify omits them from its library API. Select the
-   saved name under **Playlist shortcuts** in the panel to play it. Shortcuts only
-   require a paired speaker; the optional playlist-library login is unnecessary.
-   Add the same playlist with a new name to rename it, or choose **Remove** to delete
-   its shortcut.
+```sh
+mise install
+mise exec -- just setup
+mise exec -- just install
+```
 
-For this checkout, `mise exec -- just import-credentials` imports the local `.env`
-without printing credential values. The extension ZIP excludes that file.
+Log out and back in so GNOME discovers the extension, then run:
 
-Preferences show the installed Soloist version, service state, saved-key presence,
-local API connection, and pairing state. **Start at login** is a switch that reflects
-systemd's actual configuration. Saving a device name or API key restarts a running
-player to apply it. Updating restores a previously running player even if the
-download fails or preferences close.
+```sh
+mise exec -- just enable
+mise exec -- just prefs
+```
 
-The top bar shows the active artist and song. The player service exports MPRIS
-media controls so desktop play/pause, previous/next keys, and QuickMusic can control
-QuickSpot. Playing from QuickSpot activates this speaker before sending playback.
-Media controls remain available when the panel extension is disabled while the
-player service is running and paired.
+Log out and back in after updating a loaded extension to load its new panel code.
+Opening preferences does not reload GNOME Shell.
 
-The panel's **Shuffle** menu controls ordinary shuffle and follows the actual player
-state, including changes from Spotify. Choosing **On** or **Off** activates this
-speaker automatically, even when its current shuffle state is unknown. **About Smart
-Shuffle…** explains the limitation inside QuickSpot without opening a browser.
-Enable Smart Shuffle in Spotify's phone app with this speaker selected; QuickSpot
-displays Smart Shuffle when Soloist reports shuffle with recommendation enhancement.
-Soloist's current
-[local API](https://developer.spotify.com/documentation/soloist/reference/websocket-api)
-provides an on/off shuffle command but no Smart Shuffle activation command. Desktop
-media clients can also read and change ordinary shuffle through MPRIS.
+On the **Player** page:
 
-## Device missing from Spotify
+1. Choose **Install** and save your [Soloist API key](https://developer.spotify.com/dashboard/soloist).
+2. Choose **Start** and wait for **Ready to pair**.
+3. Open Spotify on your phone or desktop on the same local network, play something,
+   and select **QuickSpot** in the device menu. The name can be changed in preferences.
 
-Run `mise exec -- just doctor`. It reports installation, service, saved-key presence,
-local API readiness, and pairing without printing credentials or account information.
-**Service: active** alone does not mean that pairing or audio playback works.
+First pairing requires the phone or desktop app; the web player cannot discover an
+unpaired speaker. Preferences distinguish a running service, a connected local API,
+and a paired speaker. **Stop** remains available while the player runs, including
+when the keyring is locked. **Start at login** follows systemd's configuration.
+Saving a device name or API key restarts a running player to apply it. An update
+attempts to restore a previously running service even if downloading fails or the
+preferences window closes.
 
-For first pairing, use the phone or desktop app, with both devices on the same
-local network. [Spotify's Connect troubleshooting](https://support.spotify.com/us/article/spotify-connect/)
-explains why the web player only shows devices you have already logged into.
-On iOS, allow Spotify access to the local network. Guest Wi-Fi, client isolation,
-and VPN routing can prevent devices from discovering one another.
+## Playlists and Liked Songs
 
-Soloist advertises `_spotify-connect._tcp` over multicast DNS (UDP 5353) and uses
-a dynamic TCP port for pairing. The local WebSocket port is separate and stays on
-loopback. A network must allow the advertised pairing port and mDNS; check the
-current firewall configuration instead of disabling it. **Device missing from Spotify?**
-in preferences summarizes these checks.
+**Library → Playlist shortcuts** accepts a name and a playlist's 22-character ID,
+Spotify link, or `spotify:playlist:…` URI. Select its saved name from the panel to
+play it. Shortcuts work without a library login, including playlists such as
+Discover Weekly that Spotify may omit from the library API. Add the same playlist
+with a new name to rename it; choose **Remove** to delete its shortcut.
 
-Use `just logs` for extension logs and `just logs-player` for the launcher.
-The launcher deliberately avoids raw Soloist logs because they can contain credentials.
+To browse saved playlists and play Liked Songs:
 
-## Uninstall and recovery
+1. Create or use a [Spotify developer app](https://developer.spotify.com/dashboard)
+   and register `http://127.0.0.1:43821/callback` as its redirect URI.
+2. On the **Library** page, enter its client ID and choose **Connect**. Keep
+   preferences open to finish browser authorization; **Cancel** stops the login.
+3. Authorize the same account paired with the speaker. Liked Songs uses that
+   account's collection; the library login and speaker pairing are separate.
 
-To stop Soloist, disable its automatic startup, and uninstall QuickSpot:
+No client secret is needed. Development-mode apps require the app owner to retain
+Premium and allow the connecting account. New apps have limits of one client ID per
+developer and five users; see [Spotify's development-mode requirements](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide).
+Login uses PKCE with `playlist-read-private` and `playlist-read-collaborative`.
+Playlist loading follows pagination, refreshes expired tokens, and observes rate limits.
+
+Credentials can also be imported from an `.env` file containing
+`SPOTIFY_SOLOIST_KEY` and/or `SPOTIFY_CLIENT_ID`. Use **Import credentials** in
+preferences or `mise exec -- just import-credentials` for this checkout's `.env`.
+The file is parsed as literal values and excluded from the extension bundle.
+
+## Shuffle and audio quality
+
+**Shuffle → On/Off** activates this speaker before changing ordinary shuffle.
+QuickSpot follows changes made in Spotify and displays Smart Shuffle when reported
+by Soloist. Enable Smart Shuffle in Spotify's phone app with this speaker selected;
+Soloist's [local API](https://developer.spotify.com/documentation/soloist/reference/websocket-api)
+does not expose a command to enable that mode.
+
+Choose audio quality in Spotify with this device selected. Soloist's
+[command line](https://developer.spotify.com/documentation/soloist/reference/command-line)
+and local API do not expose quality controls or the active bitrate, so QuickSpot
+cannot confirm that a stream is lossless.
+
+## Troubleshooting
+
+Run `mise exec -- just doctor` to check installation, service state, saved-key
+presence, local API connectivity, and pairing without printing credentials or
+account information. A running service alone does not confirm pairing or audible
+playback. If Soloist has expired, choose **Update** in preferences.
+
+For a missing speaker, use the phone or desktop app on the same local network.
+Allow Spotify local-network access on iOS. Guest Wi-Fi, client isolation, and VPN
+routing can prevent discovery. Soloist uses multicast DNS (UDP 5353) and a dynamic
+TCP pairing port, separate from its loopback API. Check network and firewall rules;
+see [Spotify Connect troubleshooting](https://support.spotify.com/us/article/spotify-connect/).
+
+Use `mise exec -- just logs` for extension logs and `mise exec -- just logs-player`
+for fixed launcher diagnostics. Raw Soloist output is silenced because it can
+contain credentials and account information.
+
+## Storage and security
+
+API keys and OAuth tokens live in GNOME Keyring, outside GSettings, service files,
+and the extension bundle. Playlist names, shortcut URIs, and the device name live
+in GSettings. The following paths use the standard XDG defaults when unset:
+
+| Data                                | Location                                                  |
+| ----------------------------------- | --------------------------------------------------------- |
+| Soloist binary and upstream notices | `$XDG_DATA_HOME/quickspot/`                               |
+| Device identity and pairing         | `$XDG_DATA_HOME/quickspot/player/`                        |
+| Audio cache, limited to 1 GiB       | `$XDG_CACHE_HOME/quickspot/`                              |
+| User service                        | `$XDG_CONFIG_HOME/systemd/user/quickspot-soloist.service` |
+
+Soloist requires its API key in process arguments; processes with sufficient
+inspection access can see it. Its WebSocket API binds to `127.0.0.1` on a dynamic
+port, but [upstream provides no authentication or Origin validation](https://developer.spotify.com/documentation/soloist/reference/websocket-api).
+Loopback binding restricts network access without isolating the API from local
+processes or browser code able to reach the port.
+
+The installer bounds download and extracted sizes, rejects unsafe archive members,
+restricts redirects to Spotify's HTTPS download origin, and checks the binary's
+version response before replacing it. Downloads use mutable upstream URLs with no
+independent signature or checksum verification; archive validation does not prove
+authenticity beyond HTTPS. Soloist is downloaded separately and is never included
+in QuickSpot's bundle.
+
+## Uninstall
 
 ```sh
 mise exec -- just uninstall
 ```
 
-If Extensions Manager will not open, remove the extension directly without
-opening any graphical app:
+This stops and disables Soloist, then removes the extension. It preserves keyring
+credentials, player data, the downloaded binary, and the disabled service definition.
+Disabling the extension alone leaves the independent player service running. Stop
+it from preferences or with `systemctl --user stop quickspot-soloist.service`.
 
-```sh
-gnome-extensions disable quickspot@napalm255.github.io
-gnome-extensions uninstall quickspot@napalm255.github.io
-```
+## Development
 
-The two GNOME commands remove the extension only. If you installed Soloist,
-stop and disable it with `systemctl --user disable --now quickspot-soloist.service`.
-Uninstalling preserves saved credentials, player data, downloaded binaries, and
-the disabled service definition.
-
-If Extensions Manager still exits with a Wayland protocol error after removal,
-try launching it with GTK's software renderer:
-
-```sh
-flatpak run --env=GSK_RENDERER=cairo com.mattjakeman.ExtensionManager
-```
-
-This changes rendering for that launch only. A protocol error can occur
-independently of QuickSpot; uninstalling an extension does not necessarily fix it.
-
-The optional playlist connection uses Spotify's
-[Authorization Code with PKCE flow](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow)
-with `playlist-read-private` and `playlist-read-collaborative`. It follows pagination,
-refreshes expired tokens, and respects API rate limits. The saved library belongs
-to the account you authorize; Soloist can be paired to a different Connect account.
-
-## Local storage and service
-
-API keys and OAuth tokens are stored in **GNOME Keyring**, never in GSettings,
-service files, or the extension bundle. Soloist requires an API key argument at
-startup, so the key is visible to processes allowed to inspect its command line.
-The launcher silences Soloist output to prevent credentials or account data from
-reaching the journal; it logs fixed failure messages instead.
-
-- Binary and upstream license notices: `$XDG_DATA_HOME/quickspot/`.
-- Persistent device identity and pairing: `$XDG_DATA_HOME/quickspot/player/`.
-- Audio cache, limited to 1 GiB: `$XDG_CACHE_HOME/quickspot/`.
-- User service: `$XDG_CONFIG_HOME/systemd/user/quickspot-soloist.service`.
-
-The installer downloads directly from Spotify over HTTPS, validates archive members,
-and replaces the binary after a version check. Spotify provides mutable download
-URLs; this installer does not claim signature or independent checksum verification.
-It supports x86_64, aarch64, and armv7l. No root privileges are needed. Soloist is
-proprietary and is downloaded separately, never redistributed with QuickSpot.
-
-The local WebSocket binds to `127.0.0.1` on a dynamically assigned port. Disabling
-the extension releases its sockets and UI; the independent Soloist service keeps
-playing. Stop Soloist in preferences or with
-`systemctl --user stop quickspot-soloist.service`.
-
-If a Soloist build expires, update it from preferences. To inspect launcher failures:
-`journalctl --user -u quickspot-soloist.service`.
-
-## Development and verification
-
-`mise.toml` owns tool versions; `justfile` owns commands. This project uses native
-GJS JavaScript modules to match GNOME's runtime and its sibling extensions without
-a transpilation layer. There are no npm runtime dependencies.
+The project uses native GJS ES modules without a transpilation step or npm runtime
+dependencies. `justfile` defines project commands; run `mise exec -- just` to list them.
 
 ```sh
 mise exec -- just ci
 mise exec -- just test-live
 ```
 
-The offline suite tests input validation, archive safety, PKCE and OAuth callbacks,
-playlist pagination, and native WebSocket events. `test-live` creates private XDG
-directories and D-Bus/dconf state, checks failed startup cleanup and populated
-playlist menus across enable/disable/re-enable in headless GNOME, exercises the
-dynamic settings controls with native GTK and Adwaita, and verifies command-line uninstall.
-It does not alter your desktop's enabled extensions.
+`ci` runs ESLint and Ruff security rules, formatting checks, schema validation,
+Node unit tests, Python installer and bundle tests, native GJS integration tests,
+secret scans of working files and Git history, and the build. Dependency checks can
+be run with `mise exec -- npm audit --ignore-scripts`.
 
-Actual Spotify authorization, audio playback, and active stream quality need a
-real account and a paired device. The offline suite cannot verify those.
+`test-live` uses temporary XDG directories, private D-Bus/dconf state, and a headless
+GNOME Shell to test startup rollback, populated menus through disable/re-enable,
+native GTK preferences, and command-line uninstall. It does not change your
+desktop's enabled extensions. Both suites use local fixtures; actual Spotify
+authorization, audible playback, discovery from another device, and stream quality
+require a real account and manual verification.
 
-Builds produce `dist/quickspot@napalm255.github.io.shell-extension.zip` from a
-runtime file allowlist. This repository's license is GPL-3.0-or-later; Spotify
-Soloist has separate upstream terms and third-party notices.
-
-See [REVIEW.md](REVIEW.md) for the review findings and remaining upstream constraints.
+Build output is `dist/quickspot@napalm255.github.io.shell-extension.zip`, assembled
+from an explicit runtime file allowlist. See [AGENTS.md](AGENTS.md) for contribution
+instructions. QuickSpot is [GPL-3.0-or-later](LICENSE); Soloist has separate upstream
+terms and third-party notices.

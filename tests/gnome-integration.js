@@ -524,6 +524,89 @@ async function testPagination() {
     }
 }
 
+async function testLoginCancellationDuringExchange() {
+    const saved = new Map();
+    let authUrl;
+    let finishExchange;
+    let exchangeCancel;
+    const response = {
+        access_token: 'fake-access',
+        refresh_token: 'fake-refresh',
+        token_type: 'Bearer',
+        expires_in: 3600,
+    };
+    const client = {
+        request: async (_method, _uri, _body, _access, cancel) => {
+            if (!finishExchange) {
+                exchangeCancel = cancel;
+                return new Promise((resolve) => {
+                    finishExchange = resolve;
+                });
+            }
+            return response;
+        },
+    };
+    const login = new SpotifyLogin(client, {
+        launch: (uri) => {
+            authUrl = uri;
+        },
+        save: async (kind, value) => saved.set(kind, value),
+    });
+    const session = new Soup.Session();
+    const state = () =>
+        GLib.Uri.parse_params(
+            authUrl.split('?')[1],
+            -1,
+            '&',
+            GLib.UriParamsFlags.NONE,
+        ).state;
+    const first = login.connect('0123456789abcdef0123456789abcdef');
+    const firstResult = first.then(
+        () => '',
+        (error) => error.message,
+    );
+    try {
+        await get(session, `${REDIRECT_URI}?state=${state()}&code=first`);
+        await waitFor(() => Boolean(finishExchange));
+        login.cancel();
+        const second = login.connect('abcdef0123456789abcdef0123456789');
+        const secondResult = second.then(
+            () => '',
+            (error) => error.message,
+        );
+        finishExchange(response);
+
+        check(
+            (await firstResult) === 'Spotify login canceled.',
+            'Canceled token exchange reported success.',
+        );
+        check(saved.size === 0, 'Canceled exchange saved credentials.');
+        check(
+            exchangeCancel?.is_cancelled(),
+            'Token exchange was not canceled.',
+        );
+        check(
+            (await get(
+                session,
+                `${REDIRECT_URI}?state=${state()}&code=second`,
+            )) === 200,
+            'Old login cleanup closed the new login listener.',
+        );
+        check((await secondResult) === '', 'Reconnect failed.');
+        check(
+            JSON.parse(saved.get('tokens')).clientId ===
+                'abcdef0123456789abcdef0123456789',
+            'Login tokens were not bound to their developer app.',
+        );
+        print(
+            'PASS: cancel during token exchange blocks storage and permits immediate reconnect',
+        );
+    } finally {
+        login.cancel();
+        session.abort();
+    }
+}
+
 async function testRefresh() {
     const stored = new Map([
         [
@@ -532,6 +615,7 @@ async function testRefresh() {
                 access: 'expired',
                 refresh: 'original-refresh',
                 expires: 0,
+                clientId: 'abcdef0123456789abcdef0123456789',
             }),
         ],
         ['client-id', '0123456789abcdef0123456789abcdef'],
@@ -546,6 +630,10 @@ async function testRefresh() {
         check(
             body.refresh_token === 'original-refresh',
             'Refresh used the wrong token.',
+        );
+        check(
+            body.client_id === 'abcdef0123456789abcdef0123456789',
+            'Refresh used an imported client ID from a different developer app.',
         );
         await tick();
         return {
@@ -585,6 +673,7 @@ async function main() {
     try {
         await testSoloist();
         await testLogin();
+        await testLoginCancellationDuringExchange();
         await testPagination();
         await testRefresh();
         const actions = [];
@@ -692,6 +781,25 @@ async function main() {
         const extensionPath = GLib.path_get_dirname(
             GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]),
         );
+        writeService(`${extensionPath}/a b"c\\d\${QUICKSPOT_TEST}%x`);
+        const unitFile = Gio.File.new_for_path(
+            `${GLib.get_user_config_dir()}/systemd/user/quickspot-soloist.service`,
+        );
+        const [, unitBytes] = unitFile.load_contents(null);
+        const unit = new TextDecoder().decode(unitBytes);
+        check(
+            unit.includes(
+                '/a b\\"c\\\\d$${QUICKSPOT_TEST}%%x/scripts/soloist-runner.js"',
+            ),
+            'Service paths did not preserve quotes, backslashes, variables, and specifiers.',
+        );
+        let invalidPath = false;
+        try {
+            writeService(`${extensionPath}\nExecStart=/unexpected`);
+        } catch (_error) {
+            invalidPath = true;
+        }
+        check(invalidPath, 'Service path accepted an injected unit directive.');
         writeService(extensionPath);
         await run([
             '/usr/bin/systemd-analyze',

@@ -60,7 +60,13 @@ export class SpotifyClient {
         this.retryAt = 0;
     }
 
-    async request(method, uri, body = null, access = null) {
+    async request(
+        method,
+        uri,
+        body = null,
+        access = null,
+        cancel = this._cancel,
+    ) {
         const library =
             method === 'GET' &&
             typeof uri === 'string' &&
@@ -76,7 +82,8 @@ export class SpotifyClient {
             !access;
         if (!library && !token)
             throw new Error('Unexpected Spotify request destination.');
-        if (this._cancel.is_cancelled()) throw new Error('Operation canceled.');
+        if (this._cancel.is_cancelled() || cancel.is_cancelled())
+            throw new Error('Operation canceled.');
         if (Date.now() < this.retryAt)
             throw new Error('Spotify is busy. Try refreshing later.');
         const message = Soup.Message.new(method, uri);
@@ -92,7 +99,7 @@ export class SpotifyClient {
             this._session.send_async(
                 message,
                 GLib.PRIORITY_DEFAULT,
-                this._cancel,
+                cancel,
                 (session, result) => {
                     try {
                         resolve(session.send_finish(result));
@@ -114,7 +121,7 @@ export class SpotifyClient {
                     stream.read_bytes_async(
                         16384,
                         GLib.PRIORITY_DEFAULT,
-                        this._cancel,
+                        cancel,
                         (source, result) => {
                             try {
                                 resolve(
@@ -190,7 +197,8 @@ export class SpotifyClient {
     }
 
     async _refreshToken(token) {
-        const clientId = await this._lookup('client-id', this._cancel);
+        const clientId =
+            token.clientId ?? (await this._lookup('client-id', this._cancel));
         if (!clientId || !/^[a-fA-F0-9]{32}$/.test(clientId))
             throw new Error('Set your Spotify client ID in settings.');
         const response = await this.request(
@@ -202,7 +210,7 @@ export class SpotifyClient {
                 refresh_token: token.refresh,
             },
         );
-        const updated = tokenRecord(response, token.refresh);
+        const updated = { ...tokenRecord(response, token.refresh), clientId };
         await this._save('tokens', JSON.stringify(updated), this._cancel);
         return updated.access;
     }
@@ -256,13 +264,11 @@ export class SpotifyLogin {
         this._client = client;
         this._launch = launch;
         this._save = save;
-        this._server = null;
-        this._timeout = 0;
-        this._settle = null;
+        this._attempt = null;
     }
 
     async connect(clientId) {
-        if (this._server)
+        if (this._attempt)
             throw new Error('Spotify login is already in progress.');
         if (!/^[a-fA-F0-9]{32}$/.test(clientId))
             throw new Error('Enter a valid Spotify client ID.');
@@ -270,9 +276,16 @@ export class SpotifyLogin {
         const state = randomString();
         const server = new Soup.Server();
         server.listen_local(43821, Soup.ServerListenOptions.IPV4_ONLY);
-        this._server = server;
+        const attempt = {
+            server,
+            cancel: new Gio.Cancellable(),
+            timeout: 0,
+            reject: null,
+            error: null,
+        };
+        this._attempt = attempt;
         const codePromise = new Promise((resolve, reject) => {
-            this._settle = reject;
+            attempt.reject = reject;
             let used = false;
             server.add_handler(
                 '/callback',
@@ -321,12 +334,13 @@ export class SpotifyLogin {
                     resolve(query.code);
                 },
             );
-            this._timeout = GLib.timeout_add_seconds(
+            attempt.timeout = GLib.timeout_add_seconds(
                 GLib.PRIORITY_DEFAULT,
                 180,
                 () => {
-                    this._timeout = 0;
-                    reject(
+                    attempt.timeout = 0;
+                    this._cancelAttempt(
+                        attempt,
                         new Error(
                             'Spotify login timed out. Try connecting again.',
                         ),
@@ -336,7 +350,7 @@ export class SpotifyLogin {
             );
         });
         // Attach a rejection handler immediately, including browser launch failure.
-        const result = this._finish(codePromise, clientId, verifier);
+        const result = this._finish(codePromise, clientId, verifier, attempt);
         try {
             this._launch(
                 'https://accounts.spotify.com/authorize?' +
@@ -356,9 +370,13 @@ export class SpotifyLogin {
         return result;
     }
 
-    async _finish(codePromise, clientId, verifier) {
+    async _finish(codePromise, clientId, verifier, attempt) {
+        const checkCanceled = () => {
+            if (attempt.cancel.is_cancelled()) throw attempt.error;
+        };
         try {
             const code = await codePromise;
+            checkCanceled();
             const response = await this._client.request(
                 'POST',
                 'https://accounts.spotify.com/api/token',
@@ -369,28 +387,45 @@ export class SpotifyLogin {
                     redirect_uri: REDIRECT_URI,
                     code_verifier: verifier,
                 },
+                null,
+                attempt.cancel,
             );
+            checkCanceled();
             await this._save(
                 'tokens',
-                JSON.stringify(tokenRecord(response)),
-                this._client._cancel,
+                JSON.stringify({ ...tokenRecord(response), clientId }),
+                attempt.cancel,
             );
-            await this._save('client-id', clientId, this._client._cancel);
+            checkCanceled();
+            await this._save('client-id', clientId, attempt.cancel);
+            checkCanceled();
+        } catch (error) {
+            if (attempt.cancel.is_cancelled()) throw attempt.error;
+            throw error;
         } finally {
-            this._cleanup();
+            this._cleanup(attempt);
         }
     }
 
-    _cleanup() {
-        if (this._timeout) GLib.Source.remove(this._timeout);
-        this._timeout = 0;
-        this._server?.disconnect();
-        this._server = null;
-        this._settle = null;
+    _cleanup(attempt) {
+        if (attempt.timeout) GLib.Source.remove(attempt.timeout);
+        attempt.timeout = 0;
+        attempt.server.disconnect();
+        if (this._attempt === attempt) this._attempt = null;
+    }
+
+    _cancelAttempt(attempt, error) {
+        attempt.error = error;
+        attempt.cancel.cancel();
+        attempt.reject(error);
+        this._cleanup(attempt);
     }
 
     cancel() {
-        this._settle?.(new Error('Spotify login canceled.'));
-        this._cleanup();
+        if (this._attempt)
+            this._cancelAttempt(
+                this._attempt,
+                new Error('Spotify login canceled.'),
+            );
     }
 }

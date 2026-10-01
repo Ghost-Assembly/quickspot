@@ -218,7 +218,10 @@ export function savedToken(value) {
         !value.access ||
         typeof value.refresh !== 'string' ||
         !value.refresh ||
-        !Number.isFinite(value.expires)
+        !Number.isFinite(value.expires) ||
+        (value.clientId !== undefined &&
+            (typeof value.clientId !== 'string' ||
+                !/^[a-fA-F0-9]{32}$/.test(value.clientId)))
     )
         throw new Error('Reconnect Spotify in QuickSpot settings.');
     return value;
@@ -256,6 +259,7 @@ export function playbackEvent(state, event) {
         next.status = event.status;
     }
     if (['playback_state', 'track_changed'].includes(event.type)) {
+        if (event.type === 'track_changed') next.position = null;
         next.uri =
             typeof event.item?.uri === 'string' &&
             /^spotify:(track|episode):[A-Za-z0-9]{22}$/.test(event.item.uri)

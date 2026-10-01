@@ -211,11 +211,12 @@ export function writeService(extensionPath) {
         'quickspot-soloist.service',
     ]);
     const runner = `${extensionPath}/scripts/soloist-runner.js`;
-    // systemd expands percent specifiers even inside quotes.
+    // systemd expands specifiers and environment variables even inside quotes.
     const escaped = runner
         .replaceAll('\\', '\\\\')
         .replaceAll('"', '\\"')
-        .replaceAll('%', '%%');
+        .replaceAll('%', '%%')
+        .replaceAll('$', () => '$$');
     const unit = `[Unit]\nDescription=QuickSpot Spotify Soloist\nPartOf=graphical-session.target\n\n[Service]\nExecStart=/usr/bin/gjs -m "${escaped}"\nRestart=on-failure\nRestartSec=5\nRestartPreventExitStatus=10 78\nUMask=0077\n\n[Install]\nWantedBy=graphical-session.target\n`;
     GLib.mkdir_with_parents(directory, 0o700);
     Gio.File.new_for_path(target).replace_contents(

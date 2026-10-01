@@ -39,6 +39,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         let accountChanged = false;
         let loggingIn = false;
         const controls = [];
+        const entries = [];
         const page = new Adw.PreferencesPage({
             title: 'Player',
             icon_name: 'audio-x-generic-symbolic',
@@ -104,6 +105,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             const row = secret
                 ? new Adw.PasswordEntryRow({ title })
                 : new Adw.EntryRow({ title });
+            entries.push(row);
             group.add(row);
             return row;
         };
@@ -281,7 +283,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             ],
             [
                 'Check readiness above',
-                'A running service alone does not confirm pairing or audio playback. Use just doctor for a private local diagnostic.',
+                'Check installation, local connection, and pairing above. Restart the player if its local connection remains unavailable.',
             ],
         ])
             troubleshooting.add_row(new Adw.ActionRow({ title, subtitle }));
@@ -475,6 +477,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             updating = false;
             for (const { widget, available } of controls)
                 widget.sensitive = !busy && available();
+            for (const row of entries) row.sensitive = !busy;
             for (const { remove } of shortcutRows) remove.sensitive = !busy;
         }
 
