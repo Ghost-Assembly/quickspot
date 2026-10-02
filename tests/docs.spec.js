@@ -98,6 +98,21 @@ test('images and social metadata resolve', async ({ page, request }) => {
 // The page states facts about the project; these tie them to its own files so
 // a release cannot leave the docs behind.
 test.describe('agrees with metadata.json', () => {
+    test('protects bundle names from Cloudflare email obfuscation', async ({
+        page,
+    }) => {
+        await page.goto('/');
+        const names = page.locator('code').filter({
+            hasText: `${metadata.uuid}.shell-extension.zip`,
+        });
+        expect(await names.count()).toBeGreaterThan(0);
+        for (const name of await names.all()) {
+            const html = await name.innerHTML();
+            expect(html).toContain('<!--email_off-->');
+            expect(html).toContain('<!--/email_off-->');
+        }
+    });
+
     test('installs the real uuid', async ({ page }) => {
         await page.goto('/');
         const install = page.locator('#install');
