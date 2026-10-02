@@ -27,7 +27,8 @@ const QuickSpotButton = GObject.registerClass(
                 }),
             );
             this.trackLabel = new St.Label({
-                text: 'QuickSpot',
+                text: '',
+                visible: false,
                 y_align: Clutter.ActorAlign.CENTER,
                 style_class: 'quickspot-track',
             });
@@ -284,8 +285,10 @@ export default class QuickSpotExtension extends Extension {
         this._button.trackLabel.text =
             state.active && state.title
                 ? [state.artist, state.title].filter(Boolean).join(' — ')
-                : 'QuickSpot';
-        this._button.accessible_name = this._button.trackLabel.text;
+                : '';
+        this._button.trackLabel.visible = Boolean(this._button.trackLabel.text);
+        this._button.accessible_name =
+            this._button.trackLabel.text || 'QuickSpot';
         this._play.label.text = state.status === 'playing' ? 'Pause' : 'Play';
         const mode = shuffleMode(state);
         const shuffleLabels = new Map([

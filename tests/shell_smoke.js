@@ -39,6 +39,12 @@ export default class ShellSmoke extends QuickSpotExtension {
         );
         console.debug('[quickspot-test] startup rollback passed');
         super.enable();
+        check(
+            !this._button.trackLabel.visible &&
+                this._button.trackLabel.text === '' &&
+                this._button.accessible_name === 'QuickSpot',
+            'Startup did not show an accessible icon-only indicator.',
+        );
         this._soloist.state = {
             ...this._soloist.state,
             active: true,
@@ -51,7 +57,8 @@ export default class ShellSmoke extends QuickSpotExtension {
         };
         this._sync();
         check(
-            this._button.trackLabel.text === 'Test artist — Test song',
+            this._button.trackLabel.visible &&
+                this._button.trackLabel.text === 'Test artist — Test song',
             'Now playing did not appear in the top bar.',
         );
         check(
@@ -74,8 +81,10 @@ export default class ShellSmoke extends QuickSpotExtension {
         this._soloist.state.active = false;
         this._sync();
         check(
-            this._button.trackLabel.text === 'QuickSpot',
-            'Inactive device left stale music in the top bar.',
+            !this._button.trackLabel.visible &&
+                this._button.trackLabel.text === '' &&
+                this._button.accessible_name === 'QuickSpot',
+            'Inactive device did not restore the accessible icon-only indicator.',
         );
         check(
             this._shuffle.sensitive && this._shuffleItems.get('on').sensitive,

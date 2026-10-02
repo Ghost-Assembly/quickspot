@@ -8,7 +8,8 @@ QuickSpot shows the active artist and song in the top bar and provides play/paus
 previous/next, device activation, shuffle, Liked Songs, saved playlists, and named
 playlist shortcuts. Preferences install or update Soloist and manage its systemd
 user service. The service exports MPRIS controls for desktop media keys and other
-media clients, even while the extension is disabled.
+media clients, even while the extension is disabled. When no track is available on
+the active device, the top bar shows only the music icon.
 
 **[Documentation →](https://ghost-assembly.com/quickspot/)** —
 [player setup](https://ghost-assembly.com/quickspot/#player),
