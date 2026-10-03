@@ -1,5 +1,21 @@
 # QuickSpot
 
+<!-- quick-template:badges:start -->
+
+[![CI](https://github.com/Ghost-Assembly/quickspot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Ghost-Assembly/quickspot/actions/workflows/ci.yml)
+[![Security](https://github.com/Ghost-Assembly/quickspot/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/Ghost-Assembly/quickspot/actions/workflows/security.yml)
+[![Docs](https://img.shields.io/website?url=https%3A%2F%2Fghost-assembly.com%2Fquickspot%2F&label=docs)](https://ghost-assembly.com/quickspot/)
+[![Release](https://img.shields.io/github/v/release/Ghost-Assembly/quickspot)](https://github.com/Ghost-Assembly/quickspot/releases/latest)
+[![License](https://img.shields.io/github/license/Ghost-Assembly/quickspot)](https://github.com/Ghost-Assembly/quickspot/blob/main/LICENSE)
+[![GNOME](https://img.shields.io/badge/GNOME-50-blue)](https://ghost-assembly.com/quickspot/#install)
+[![Security issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dsoftware_quality_security_issues&query=%24.component.measures%5B0%5D.value&label=Security+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
+[![Reliability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dsoftware_quality_reliability_issues&query=%24.component.measures%5B0%5D.value&label=Reliability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
+[![Maintainability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dsoftware_quality_maintainability_issues&query=%24.component.measures%5B0%5D.value&label=Maintainability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
+[![Duplication](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dduplicated_lines_density&query=%24.component.measures%5B0%5D.value&label=Duplication)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
+[![Coverage](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dcoverage&query=%24.component.measures%5B0%5D.value&label=Coverage)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
+[![Sonar policy](https://github.com/Ghost-Assembly/quickspot/actions/workflows/sonar.yml/badge.svg?branch=main)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
+<!-- quick-template:badges:end -->
+
 A Spotify speaker and playback controls for **GNOME Shell 50**, powered by
 [Spotify Soloist](https://developer.spotify.com/documentation/soloist). Part of
 [Ghost Assembly](https://github.com/Ghost-Assembly).
@@ -28,24 +44,7 @@ architecture, testing, and packaging.
 GNOME libraries come from the host. `mise.toml` pins development runtimes and tools;
 Python development checks use the pinned interpreter.
 
-## Install
-
-With mise activated in your shell and `just` available, from this checkout:
-
-```sh
-just setup
-just install
-```
-
-Log out and back in so GNOME discovers the extension, then run:
-
-```sh
-just enable
-just prefs
-```
-
-Log out and back in after updating a loaded extension to load its new panel code.
-Opening preferences does not reload GNOME Shell.
+## Player setup
 
 On the **Player** page:
 
@@ -146,53 +145,127 @@ independent signature or checksum verification; archive validation does not prov
 authenticity beyond HTTPS. Soloist is downloaded separately and is never included
 in QuickSpot's bundle.
 
-## Uninstall
+## Install
+
+<!-- quick-template:install:start -->
+
+Requires GNOME Shell 50. Requires GJS, libsecret, libsoup 3, GTK 4, libadwaita, Python 3.12 or newer, a graphical systemd user session, PipeWire or PulseAudio, Spotify Premium, and your own Soloist API key. Official Soloist downloads support x86_64, aarch64, and armv7l Linux.
+
+### From a release
+
+Download the latest release ZIP and install it for your user. xh is a download tool; you can also download the ZIP from GitHub in a browser. Installing compiles the settings schema.
 
 ```sh
-just uninstall
+xh --download GET https://github.com/Ghost-Assembly/quickspot/releases/latest/download/quickspot@napalm255.github.io.shell-extension.zip
+gnome-extensions install --force quickspot@napalm255.github.io.shell-extension.zip
 ```
 
-This stops and disables Soloist, then removes the extension. It preserves keyring
-credentials, player data, the downloaded binary, and the disabled service definition.
-Disabling the extension alone leaves the independent player service running. Stop
-it from preferences or with `systemctl --user stop quickspot-soloist.service`.
+Log out and back in so GNOME discovers the extension, then enable it:
+
+```sh
+gnome-extensions enable quickspot@napalm255.github.io
+```
+
+### From a clone
+
+Install mise and activate it in your shell. Clone the repository, install its pinned tools, and build and install the same ZIP used for releases:
+
+```sh
+git clone https://github.com/Ghost-Assembly/quickspot.git
+cd quickspot
+mise install
+mise exec -- just setup
+mise exec -- just install
+```
+
+Log out and back in, then run just enable. Run just prefs to open preferences. After updating a loaded extension, start a new session to load its new code; opening preferences does not reload GNOME Shell.
+<!-- quick-template:install:end -->
+
+## Uninstall
+
+<!-- quick-template:uninstall:start -->
+
+Disable and uninstall the extension for your user. These commands preserve saved settings and other user data.
+
+```sh
+if systemctl --user cat quickspot-soloist.service >/dev/null 2>&1; then
+    systemctl --user disable --now quickspot-soloist.service
+fi
+gnome-extensions disable quickspot@napalm255.github.io
+gnome-extensions uninstall quickspot@napalm255.github.io
+```
+
+From a clone, just uninstall performs the same steps. Disabling with just disable leaves the extension installed.
+<!-- quick-template:uninstall:end -->
+
+This preserves keyring credentials, player data, the downloaded binary, and the disabled service definition. Disabling the extension alone leaves Soloist running.
+
+## Testing
+
+<!-- quick-template:testing:start -->
+
+just test runs the JavaScript suite with Vitest, the shared tooling tests, and any project-specific offline suites. just coverage reports the JavaScript coverage universe, including untested runtime files. Test stubs and generated reports are not runtime source.
+
+just test-docs runs Playwright and axe in Chromium and Firefox: dark and light accessibility checks, keyboard navigation, mobile layout, reduced motion, links, metadata, local assets, and no page JavaScript. Automated accessibility checks still require human review of reading and focus order.
+
+just test-live checks the package and runs isolated GNOME lifecycle checks. It is a separate local check, not proof of compatibility from a hosted runner. Verify each declared GNOME version and complete the project's manual checks before releasing.
+<!-- quick-template:testing:end -->
+
+### Project checks
+
+Offline GJS and Python suites use temporary XDG paths and private buses. The isolated Shell and GTK checks cover startup rollback, populated menus across disable/re-enable, preferences, and command-line uninstall. Actual Spotify authorization, audible playback, discovery from another device, and audio quality require a real account and manual verification.
+
+## Packaging
+
+<!-- quick-template:packaging:start -->
+
+```sh
+just build
+just pack-check
+```
+
+The output is quickspot@napalm255.github.io.shell-extension.zip at the repository root, with metadata.json at the archive root. Python's standard library packages the explicit runtimeFiles allowlist in quick-project.json, using stable file order and timestamps.
+
+just pack-check compares both filenames and file contents with GNOME's official packer and validates shipped icons. Docs, tests, dependencies, credentials, downloaded binaries, and development artifacts stay outside the ZIP. Update the runtime allowlist when adding a runtime file.
+<!-- quick-template:packaging:end -->
+
+## Releasing
+
+<!-- quick-template:releasing:start -->
+
+Run just ci, just test-live, and the project manual checklist. Set metadata.json version-name and package.json version to the same new version and increment metadata.json version for the GNOME Extension Store. Update the npm lockfile, regenerate the docs, and commit the reviewed changes to main through a passing pull request.
+
+Create and push a v-prefixed tag for that version. The release workflow verifies the version, main ancestry, and successful required checks for the tagged commit, then attaches its tested ZIP to a GitHub release. It does not upload to extensions.gnome.org; that submission and its review remain manual.
+<!-- quick-template:releasing:end -->
 
 ## Development
 
-The project uses native GJS ES modules without a transpilation step or npm runtime
-dependencies. `justfile` defines project commands; run `just` to list them.
+<!-- quick-template:development:start -->
+
+mise.toml pins runtime and CLI versions; justfile owns commands; npm owns development dependencies and the lockfile. GNOME libraries come from the host. On image-based Fedora, use the host's available tools or a toolbox/distrobox for missing system packages; do not layer packages onto the OS.
 
 ```sh
-just ci
-just test-live
-just test-docs
-just pack-check
-just docs
+just setup        # install pinned tools, dependencies, and browsers
+just fmt          # format source and configuration
+just lint         # verify template, generated docs, source, and schemas
+just test         # JavaScript, Python, and project offline tests
+just coverage     # report JavaScript coverage without source exclusions
+just test-docs    # Chromium and Firefox documentation checks
+just security     # dependencies, secrets, and workflow checks
+just build        # build the runtime-only extension ZIP
+just pack-check   # compare files and contents with GNOME's packer
+just ci           # complete local verification and packaging
+just test-live    # isolated GNOME lifecycle and project integration checks
+just docs         # serve the static site at localhost:8000
+just template-check  # verify the pinned canonical template
+just template-status # report a newer approved template revision
 ```
 
-`ci` runs ESLint and Ruff security rules, formatting checks, schema validation,
-Node unit tests, Python installer and bundle tests, native GJS integration tests,
-documentation browser checks in Chromium and Firefox,
-secret scans of working files and Git history, and the build. Dependency checks can
-be run with `mise exec -- npm audit --ignore-scripts`.
+GitHub requires local verification, security analysis, and completed Sonar analysis. The shared Sonar policy requires zero security, reliability, and maintainability issues and zero duplicated lines. Missing configuration fails instead of silently skipping analysis. Pages publishes the tested docs only after the required checks pass on main.
 
-`setup` installs Chromium and Firefox for `test-docs`. The documentation suite
-checks accessibility in both color schemes, mobile layout, keyboard navigation,
-reduced motion, local assets, links, and project metadata. `docs` serves the static
-site at `http://127.0.0.1:8000`; there is no documentation build step or JavaScript.
+Common tooling and these instructions are generated from a pinned canonical template. Change that source and synchronize its approved revision; do not edit generated sections or locally bless drift. Extension-specific behavior belongs in project configuration and project.just.
+<!-- quick-template:development:end -->
 
-`test-live` uses temporary XDG directories, private D-Bus/dconf state, and a headless
-GNOME Shell to test startup rollback, populated menus through disable/re-enable,
-native GTK preferences, and command-line uninstall. It does not change your
-desktop's enabled extensions. Both suites use local fixtures; actual Spotify
-authorization, audible playback, discovery from another device, and stream quality
-require a real account and manual verification.
+## License
 
-`just build` writes `quickspot@napalm255.github.io.shell-extension.zip` at the
-repository root, assembled
-from an explicit runtime file allowlist using Python’s standard library.
-`just install` builds and installs that ZIP for the current user. `just pack-check`
-compares its files and contents with GNOME’s official packer and runs before
-`just test-live`. See [AGENTS.md](AGENTS.md) for contribution
-instructions. QuickSpot is [GPL-3.0-or-later](LICENSE); Soloist has separate upstream
-terms and third-party notices.
+[GPL-3.0-or-later](LICENSE).

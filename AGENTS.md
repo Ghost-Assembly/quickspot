@@ -8,7 +8,7 @@ runtime dependencies without a concrete requirement.
 ## Code and boundaries
 
 - `extension.js` owns the panel and menu; `prefs.js` owns GTK/Adwaita preferences.
-- `modules/model.js` contains pure validation shared by GJS and Node tests.
+- `modules/model.js` contains pure validation shared by GJS and Vitest tests.
 - `modules/player.js` tracks installation, service, credentials, and playback as
   distinct states. `modules/soloist.js` owns the loopback WebSocket connection.
 - `modules/spotify.js` owns Web API requests and PKCE login. Bind tokens to the
@@ -34,7 +34,7 @@ Do not retrofit a second task runner or add Python packaging for these scripts.
 
 - `just setup`: install tools and development dependencies.
 - `just fmt`: format changes.
-- `just ci`: lint, schemas, offline tests, docs, secrets, and build.
+- `just ci`: template and docs verification, lint, schemas, offline tests, coverage, docs browsers, security scans, and packer comparison. GitHub additionally requires CodeQL and Sonar.
 - `just test-docs`: documentation checks in Chromium and Firefox,
   also included in `ci`; `setup` installs both browsers.
 - `just docs`: serve the static documentation site locally.
@@ -48,7 +48,7 @@ player service, or desktop settings for automated tests. Run `test-live` when
 changing panel or preferences behavior. Report actual results and any unverified
 account, audio, network-discovery, or upstream behavior.
 
-`scripts/build.py` packages only its runtime allowlist into the repository-root
+`scripts/build.py` packages only the `runtimeFiles` allowlist in `quick-project.json` into the repository-root
 ZIP, using Python’s standard library. `just install` builds and installs that ZIP. Update that list when adding
 runtime files, and keep credentials, downloaded binaries, docs, tests, dependencies,
 and planning artifacts out of the ZIP.
@@ -66,3 +66,19 @@ Write new prose, comments, and identifiers in American English. Keep fixes focus
 and ask before pushing, opening or merging pull requests, changing remote settings,
 or deleting user data. Local fixes and the checks above are authorized by a request
 to review or improve this repository.
+
+## Template files
+
+`quick-template.lock.json` pins a full commit SHA from
+`Ghost-Assembly/quick-template`. `just template-check` compares managed files
+with that immutable GitHub archive; a local manifest cannot approve drift.
+Change shared tooling in the canonical repository, then run
+`just template-sync SHA`, `npm ci --ignore-scripts`, `just docs-generate`, and
+`just ci` in this checkout. The weekly freshness check reports newer approved
+releases without adopting them automatically.
+
+Project hooks belong in `project.just`, runtime packaging inputs in
+`quick-project.json`, documentation identity in `docs/project.json`, and local
+styling in `docs/project.css`. Common README and site sections are generated;
+keep extension-specific content outside their markers. Lifecycle test scripts
+remain specific to the extension.

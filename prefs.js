@@ -5,11 +5,7 @@ import Gtk from 'gi://Gtk?version=4.0';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import { deviceName, playlistShortcut, soloistKey } from './modules/model.js';
 import { lookupSecret, storeSecret, clearSecret } from './modules/secrets.js';
-import {
-    SpotifyClient,
-    SpotifyLogin,
-    REDIRECT_URI,
-} from './modules/spotify.js';
+import { SpotifyClient, SpotifyLogin, REDIRECT_URI } from './modules/spotify.js';
 import { PlayerController } from './modules/player.js';
 import { importCredentials } from './modules/credentials.js';
 import { readShortcuts, writeShortcuts } from './modules/shortcuts.js';
@@ -60,7 +56,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         feedback.add(message);
 
         const player = this._createPlayer(() => sync());
-        const perform = async (callback) => {
+        const perform = async callback => {
             if (busy || closed) return;
             busy = true;
             message.visible = true;
@@ -70,9 +66,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 const result = await callback();
                 if (!closed) {
                     message.subtitle = result || 'Done.';
-                    window.add_toast(
-                        new Adw.Toast({ title: result || 'Done.' }),
-                    );
+                    window.add_toast(new Adw.Toast({ title: result || 'Done.' }));
                 }
             } catch (error) {
                 if (!closed) {
@@ -109,7 +103,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             group.add(row);
             return row;
         };
-        const launch = (uri) => Gio.AppInfo.launch_default_for_uri(uri, null);
+        const launch = uri => Gio.AppInfo.launch_default_for_uri(uri, null);
         const reloadLibrary = () => {
             if (!closed)
                 settings.set_uint(
@@ -166,8 +160,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         playerGroup.add(runtime);
         const autostart = new Adw.SwitchRow({
             title: 'Start at login',
-            subtitle:
-                'Make this computer available in Spotify when you sign in.',
+            subtitle: 'Make this computer available in Spotify when you sign in.',
         });
         autostart.connect('notify::active', () => {
             if (updating || closed) return;
@@ -198,11 +191,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         });
         const key = entry(identity, 'Soloist API key', true);
         button(key, 'Save', async () => {
-            await storeSecret(
-                'soloist-key',
-                soloistKey(key.text.trim()),
-                cancel,
-            );
+            await storeSecret('soloist-key', soloistKey(key.text.trim()), cancel);
             if (closed) return;
             key.text = '';
             await player.refreshCredentials();
@@ -235,7 +224,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                     dialog.open(window, cancel, (source, result) => {
                         try {
                             resolve(source.open_finish(result));
-                        } catch (_error) {
+                        } catch {
                             reject(new Error('Credential import canceled.'));
                         }
                     });
@@ -377,10 +366,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         const shortcutName = entry(shortcuts, 'Playlist name');
         const shortcutId = entry(shortcuts, 'Playlist ID, link, or URI');
         button(shortcutId, 'Add', () => {
-            const playlist = playlistShortcut(
-                shortcutName.text,
-                shortcutId.text,
-            );
+            const playlist = playlistShortcut(shortcutName.text, shortcutId.text);
             const saved = readShortcuts(settings);
             const existing = saved.some(({ uri }) => uri === playlist.uri);
             if (!existing && saved.length >= 100)
@@ -393,9 +379,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
             ]);
             shortcutName.text = '';
             shortcutId.text = '';
-            return existing
-                ? 'Playlist shortcut updated.'
-                : 'Playlist shortcut added.';
+            return existing ? 'Playlist shortcut updated.' : 'Playlist shortcut added.';
         });
         libraryPage.add(shortcuts);
         const savedShortcuts = new Adw.PreferencesGroup({
@@ -447,9 +431,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
         function sync() {
             if (closed) return;
             const view = player.presentation;
-            status.title = player.state.checking
-                ? 'Checking player…'
-                : view.title;
+            status.title = player.state.checking ? 'Checking player…' : view.title;
             status.subtitle = view.detail;
             installation.subtitle = player.state.installed
                 ? `Soloist ${player.state.version || 'installed'}`
@@ -505,7 +487,7 @@ export default class QuickSpotPreferences extends ExtensionPreferences {
                 if (!clientId.text && id) clientId.text = id;
                 if (!accountChanged) librarySaved = Boolean(tokens);
                 sync();
-            } catch (_error) {
+            } catch {
                 if (!closed) {
                     message.visible = true;
                     message.subtitle =

@@ -4,12 +4,7 @@ import GLib from 'gi://GLib';
 import Soup from 'gi://Soup?version=3.0';
 import System from 'system';
 import { SoloistClient } from '../modules/soloist.js';
-import {
-    SpotifyClient,
-    SpotifyLogin,
-    pkce,
-    REDIRECT_URI,
-} from '../modules/spotify.js';
+import { SpotifyClient, SpotifyLogin, pkce, REDIRECT_URI } from '../modules/spotify.js';
 import { paths, writeService, run } from '../modules/platform.js';
 import { importCredentials } from '../modules/credentials.js';
 import { likedSongsUri, shuffleMode } from '../modules/model.js';
@@ -21,7 +16,7 @@ function check(condition, message) {
 }
 
 function tick() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 20, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
@@ -76,9 +71,7 @@ async function testSoloist() {
         (_server, _message, _path, connection) => {
             socket = connection;
             connection.connect('message', (_connection, _type, bytes) => {
-                const command = JSON.parse(
-                    new TextDecoder().decode(bytes.get_data()),
-                );
+                const command = JSON.parse(new TextDecoder().decode(bytes.get_data()));
                 commands.push(command);
                 if (command.uri === 'spotify:user:rejected:collection') {
                     connection.send_text(
@@ -123,10 +116,7 @@ async function testSoloist() {
                     connection.send_text(
                         JSON.stringify({
                             type: 'playback_changed',
-                            status:
-                                command.command === 'play'
-                                    ? 'playing'
-                                    : 'paused',
+                            status: command.command === 'play' ? 'playing' : 'paused',
                         }),
                     );
             });
@@ -176,13 +166,8 @@ async function testSoloist() {
         const collection = likedSongsUri({ id: 'native-test-user' });
         await client.command('play', collection);
         await waitFor(() => commands.length === 2);
-        check(
-            commands[1].uri === collection,
-            'Liked Songs did not reach the player.',
-        );
-        socket.send_text(
-            JSON.stringify({ type: 'device_changed', is_active: false }),
-        );
+        check(commands[1].uri === collection, 'Liked Songs did not reach the player.');
+        socket.send_text(JSON.stringify({ type: 'device_changed', is_active: false }));
         await waitFor(() => !client.state.active);
         await client.command('play', collection);
         check(
@@ -196,10 +181,7 @@ async function testSoloist() {
             await client.command('play', 'spotify:user:rejected:collection');
         } catch (error) {
             rejected = true;
-            check(
-                !error.message.includes('upstream'),
-                'Raw command error escaped.',
-            );
+            check(!error.message.includes('upstream'), 'Raw command error escaped.');
         }
         check(rejected, 'Rejected command was reported as successful.');
         await client.command('play');
@@ -261,9 +243,7 @@ async function testSoloist() {
             commands.at(-1).command === 'skip_next',
             'MPRIS Next did not reach Soloist.',
         );
-        socket.send_text(
-            JSON.stringify({ type: 'device_changed', is_active: false }),
-        );
+        socket.send_text(JSON.stringify({ type: 'device_changed', is_active: false }));
         await waitFor(() => !client.state.active);
         const beforeShuffle = commands.length;
         await call(
@@ -301,22 +281,14 @@ async function testSoloist() {
             await call(
                 'org.freedesktop.DBus.Properties',
                 'Get',
-                new GLib.Variant('(ss)', [
-                    'org.mpris.MediaPlayer2.Player',
-                    'Shuffle',
-                ]),
+                new GLib.Variant('(ss)', ['org.mpris.MediaPlayer2.Player', 'Shuffle']),
             )
         ).recursiveUnpack();
-        check(
-            shuffled === true,
-            'Smart Shuffle was not exposed as shuffled playback.',
-        );
+        check(shuffled === true, 'Smart Shuffle was not exposed as shuffled playback.');
         print(
             'PASS: inactive speaker shuffle activation, remote Smart Shuffle updates, and MPRIS shuffle',
         );
-        socket.send_text(
-            JSON.stringify({ type: 'device_changed', is_active: false }),
-        );
+        socket.send_text(JSON.stringify({ type: 'device_changed', is_active: false }));
         await waitFor(() => !client.state.active);
         activateDevice = false;
         const beforeFailedActivation = commands.length;
@@ -335,9 +307,7 @@ async function testSoloist() {
         activateDevice = true;
         await client.setShuffle(false);
         await waitFor(() => client.state.active && !client.state.shuffle);
-        print(
-            'PASS: failed activation blocks shuffle and subsequent retry succeeds',
-        );
+        print('PASS: failed activation blocks shuffle and subsequent retry succeeds');
         print(
             'PASS: real MPRIS discovery, metadata, play/pause, and next over a private D-Bus session',
         );
@@ -350,9 +320,7 @@ async function testSoloist() {
         socket.send_text(
             JSON.stringify({ type: 'playback_changed', status: 'paused' }),
         );
-        await waitFor(
-            () => client.state.status === 'paused' && !client.state.error,
-        );
+        await waitFor(() => client.state.status === 'paused' && !client.state.error);
         socket.send_text(
             JSON.stringify({ type: 'error', message: 'upstream diagnostic' }),
         );
@@ -402,7 +370,7 @@ async function testLogin() {
         },
     };
     const login = new SpotifyLogin(client, {
-        launch: (uri) => {
+        launch: uri => {
             authUrl = uri;
         },
         save: async (kind, value) => saved.set(kind, value),
@@ -423,10 +391,7 @@ async function testLogin() {
             'Incorrect OAuth parameters.',
         );
         check(
-            (await get(
-                session,
-                `${REDIRECT_URI}?state=wrong&code=fake-code`,
-            )) === 400,
+            (await get(session, `${REDIRECT_URI}?state=wrong&code=fake-code`)) === 400,
             'Invalid OAuth state was accepted.',
         );
         check(!exchange, 'Token exchange happened before a valid callback.');
@@ -443,8 +408,7 @@ async function testLogin() {
             'Token verifier does not match challenge.',
         );
         check(
-            exchange.body.code === 'fake-code' &&
-                !('client_secret' in exchange.body),
+            exchange.body.code === 'fake-code' && !('client_secret' in exchange.body),
             'Incorrect PKCE exchange.',
         );
         check(
@@ -469,10 +433,7 @@ async function testLogin() {
         await pending;
         throw new Error('Canceled login succeeded.');
     } catch (error) {
-        check(
-            error.message === 'Spotify login canceled.',
-            'Unexpected cancel result.',
-        );
+        check(error.message === 'Spotify login canceled.', 'Unexpected cancel result.');
     }
     print('PASS: canceled login releases its loopback listener');
 }
@@ -512,13 +473,11 @@ async function testPagination() {
         let rejected = false;
         try {
             await client.playlists();
-        } catch (_error) {
+        } catch {
             rejected = true;
         }
         check(rejected, 'Repeated page was not rejected.');
-        print(
-            'PASS: native playlist pagination, sorting, and repeated page rejection',
-        );
+        print('PASS: native playlist pagination, sorting, and repeated page rejection');
     } finally {
         client.destroy();
     }
@@ -539,7 +498,7 @@ async function testLoginCancellationDuringExchange() {
         request: async (_method, _uri, _body, _access, cancel) => {
             if (!finishExchange) {
                 exchangeCancel = cancel;
-                return new Promise((resolve) => {
+                return new Promise(resolve => {
                     finishExchange = resolve;
                 });
             }
@@ -547,23 +506,19 @@ async function testLoginCancellationDuringExchange() {
         },
     };
     const login = new SpotifyLogin(client, {
-        launch: (uri) => {
+        launch: uri => {
             authUrl = uri;
         },
         save: async (kind, value) => saved.set(kind, value),
     });
     const session = new Soup.Session();
     const state = () =>
-        GLib.Uri.parse_params(
-            authUrl.split('?')[1],
-            -1,
-            '&',
-            GLib.UriParamsFlags.NONE,
-        ).state;
+        GLib.Uri.parse_params(authUrl.split('?')[1], -1, '&', GLib.UriParamsFlags.NONE)
+            .state;
     const first = login.connect('0123456789abcdef0123456789abcdef');
     const firstResult = first.then(
         () => '',
-        (error) => error.message,
+        error => error.message,
     );
     try {
         await get(session, `${REDIRECT_URI}?state=${state()}&code=first`);
@@ -572,7 +527,7 @@ async function testLoginCancellationDuringExchange() {
         const second = login.connect('abcdef0123456789abcdef0123456789');
         const secondResult = second.then(
             () => '',
-            (error) => error.message,
+            error => error.message,
         );
         finishExchange(response);
 
@@ -581,15 +536,10 @@ async function testLoginCancellationDuringExchange() {
             'Canceled token exchange reported success.',
         );
         check(saved.size === 0, 'Canceled exchange saved credentials.');
+        check(exchangeCancel?.is_cancelled(), 'Token exchange was not canceled.');
         check(
-            exchangeCancel?.is_cancelled(),
-            'Token exchange was not canceled.',
-        );
-        check(
-            (await get(
-                session,
-                `${REDIRECT_URI}?state=${state()}&code=second`,
-            )) === 200,
+            (await get(session, `${REDIRECT_URI}?state=${state()}&code=second`)) ===
+                200,
             'Old login cleanup closed the new login listener.',
         );
         check((await secondResult) === '', 'Reconnect failed.');
@@ -621,7 +571,7 @@ async function testRefresh() {
         ['client-id', '0123456789abcdef0123456789abcdef'],
     ]);
     const client = new SpotifyClient({
-        lookup: async (kind) => stored.get(kind),
+        lookup: async kind => stored.get(kind),
         save: async (kind, value) => stored.set(kind, value),
     });
     let requests = 0;
@@ -643,12 +593,9 @@ async function testRefresh() {
         };
     };
     try {
-        const tokens = await Promise.all([
-            client.accessToken(),
-            client.accessToken(),
-        ]);
+        const tokens = await Promise.all([client.accessToken(), client.accessToken()]);
         check(
-            requests === 1 && tokens.every((value) => value === 'fresh'),
+            requests === 1 && tokens.every(value => value === 'fresh'),
             'Concurrent refresh was not shared.',
         );
         check(
@@ -659,9 +606,7 @@ async function testRefresh() {
             (await client.accessToken()) === 'fresh' && requests === 1,
             'Unexpired token was refreshed unnecessarily.',
         );
-        print(
-            'PASS: expired token refresh, concurrency, persistence, and reuse',
-        );
+        print('PASS: expired token refresh, concurrency, persistence, and reuse');
     } finally {
         client.destroy();
     }
@@ -713,9 +658,7 @@ async function main() {
                 actions.join(',') === 'stop,start' && activeState === 'active',
                 'Canceled update left the existing player stopped.',
             );
-            print(
-                'PASS: canceled update restores the previously running player',
-            );
+            print('PASS: canceled update restores the previously running player');
         } finally {
             player.destroy();
         }
@@ -724,20 +667,16 @@ async function main() {
             for (const uri of [
                 'https://example.invalid/v1/me/playlists',
                 'https://api.spotify.com.evil/v1/me/playlists',
-                'http://api.spotify.com/v1/me/playlists',
+                'https://api.spotify.com/v1/me/playlists'.replace('https:', 'http:'),
             ]) {
                 let blocked = false;
                 try {
                     await guarded.request('GET', uri, null, 'fake-access');
                 } catch (error) {
                     blocked =
-                        error.message ===
-                        'Unexpected Spotify request destination.';
+                        error.message === 'Unexpected Spotify request destination.';
                 }
-                check(
-                    blocked,
-                    'Bearer-token request was allowed to leave Spotify.',
-                );
+                check(blocked, 'Bearer-token request was allowed to leave Spotify.');
             }
             print(
                 'PASS: request boundary blocks bearer tokens to unexpected destinations',
@@ -767,7 +706,7 @@ async function main() {
         let rejected = false;
         try {
             await importCredentials(credentials, null, save);
-        } catch (_error) {
+        } catch {
             rejected = true;
         }
         check(
@@ -796,7 +735,7 @@ async function main() {
         let invalidPath = false;
         try {
             writeService(`${extensionPath}\nExecStart=/unexpected`);
-        } catch (_error) {
+        } catch {
             invalidPath = true;
         }
         check(invalidPath, 'Service path accepted an injected unit directive.');

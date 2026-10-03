@@ -33,10 +33,7 @@
             property="og:description"
             content="A Spotify speaker, controlled from your top bar."
         />
-        <meta
-            property="og:url"
-            content="https://ghost-assembly.com/quickspot/"
-        />
+        <meta property="og:url" content="https://ghost-assembly.com/quickspot/" />
         <meta
             property="og:image"
             content="https://ghost-assembly.com/quickspot/assets/og-image.png"
@@ -51,17 +48,8 @@
 
         <div class="night">
             <header class="bar">
-                <a
-                    class="crumb"
-                    href="#top"
-                    aria-label="QuickSpot, back to top"
-                >
-                    <img
-                        src="assets/emblem.webp"
-                        alt=""
-                        width="32"
-                        height="32"
-                    />
+                <a class="crumb" href="#top" aria-label="QuickSpot, back to top">
+                    <img src="assets/emblem.webp" alt="" width="32" height="32" />
                     <span class="org">Ghost Assembly</span>
                     <span class="sep" aria-hidden="true">/</span>
                     <span class="product">QuickSpot</span>
@@ -73,8 +61,7 @@
                         </li>
 
                         <li>
-                            <a
-                                href="https://github.com/Ghost-Assembly/quickspot"
+                            <a href="https://github.com/Ghost-Assembly/quickspot"
                                 >GitHub
                                 <svg
                                     width="15"
@@ -110,9 +97,9 @@
                         A Spotify speaker, controlled from your top bar.
                     </p>
                     <p class="lede">
-                        Spotify Soloist playback, Liked Songs, and named
-                        playlist shortcuts. Set up your speaker in preferences,
-                        then control it from the GNOME panel.
+                        Spotify Soloist playback, Liked Songs, and named playlist
+                        shortcuts. Set up your speaker in preferences, then control it
+                        from the GNOME panel.
                     </p>
                     <ul class="chips" aria-label="At a glance">
                         <li class="chip">GNOME Shell 50</li>
@@ -171,9 +158,7 @@
                         >
                     </div>
                     <div class="spot-menu" aria-hidden="true">
-                        <div class="spot-status">
-                            Connected · this device is active
-                        </div>
+                        <div class="spot-status">Connected · this device is active</div>
                         <div class="spot-row"><span>Previous</span></div>
                         <div class="spot-row spot-selected">
                             <span>Pause</span>
@@ -246,57 +231,56 @@
             </section>
         </div>
         <div class="docs">
-            <nav class="toc" aria-label="Contents">
+            <form class="toc-controls" aria-label="Table of contents visibility">
+                <label for="toc-toggle"
+                    ><input
+                        type="checkbox"
+                        id="toc-toggle"
+                        aria-controls="contents"
+                    />On this page</label
+                >
+            </form>
+            <nav id="contents" class="toc" aria-label="Contents">
                 <p class="toc-title">On this page</p>
                 <ol>
                     <li>
-                        <a href="#overview"
-                            ><span class="n">01</span>Overview</a
-                        >
+                        <a href="#overview"><span class="n">01</span>Overview</a>
                     </li>
                     <li>
                         <a href="#install"><span class="n">02</span>Install</a>
                     </li>
                     <li>
+                        <a href="#uninstall"><span class="n">03</span>Uninstall</a>
+                    </li>
+                    <li>
                         <a href="#player"
-                            ><span class="n">03</span>Player setup and
-                            pairing</a
+                            ><span class="n">04</span>Player setup and pairing</a
                         >
                     </li>
                     <li>
                         <a href="#playback"
-                            ><span class="n">04</span>Playback controls</a
+                            ><span class="n">05</span>Playback controls</a
                         >
                     </li>
                     <li>
                         <a href="#library"
-                            ><span class="n">05</span>Playlists and library
-                            login</a
+                            ><span class="n">06</span>Playlists and library login</a
                         >
                     </li>
                     <li>
-                        <a href="#preferences"
-                            ><span class="n">06</span>Preferences</a
-                        >
+                        <a href="#preferences"><span class="n">07</span>Preferences</a>
                     </li>
                     <li>
-                        <a href="#quality"
-                            ><span class="n">07</span>Audio quality</a
-                        >
+                        <a href="#quality"><span class="n">08</span>Audio quality</a>
                     </li>
                     <li>
                         <a href="#troubleshooting"
-                            ><span class="n">08</span>Troubleshooting</a
+                            ><span class="n">09</span>Troubleshooting</a
                         >
                     </li>
                     <li>
                         <a href="#security"
-                            ><span class="n">09</span>Storage and security</a
-                        >
-                    </li>
-                    <li>
-                        <a href="#uninstall"
-                            ><span class="n">10</span>Uninstall</a
+                            ><span class="n">10</span>Storage and security</a
                         >
                     </li>
                     <li>
@@ -308,192 +292,138 @@
                         <a href="#testing"><span class="n">12</span>Testing</a>
                     </li>
                     <li>
-                        <a href="#packaging"
-                            ><span class="n">13</span>Packaging</a
-                        >
+                        <a href="#packaging"><span class="n">13</span>Packaging</a>
                     </li>
                     <li>
-                        <a href="#development"
-                            ><span class="n">14</span>Development</a
-                        >
+                        <a href="#releasing"><span class="n">14</span>Releasing</a>
+                    </li>
+                    <li>
+                        <a href="#development"><span class="n">15</span>Development</a>
                     </li>
                 </ol>
             </nav>
             <main class="content" id="main">
-                <details class="toc-m">
-                    <summary>On this page</summary>
-                    <ol>
-                        <li>
-                            <a href="#overview"
-                                ><span class="n">01</span>Overview</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#install"
-                                ><span class="n">02</span>Install</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#player"
-                                ><span class="n">03</span>Player setup and
-                                pairing</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#playback"
-                                ><span class="n">04</span>Playback controls</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#library"
-                                ><span class="n">05</span>Playlists and library
-                                login</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#preferences"
-                                ><span class="n">06</span>Preferences</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#quality"
-                                ><span class="n">07</span>Audio quality</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#troubleshooting"
-                                ><span class="n">08</span>Troubleshooting</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#security"
-                                ><span class="n">09</span>Storage and
-                                security</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#uninstall"
-                                ><span class="n">10</span>Uninstall</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#architecture"
-                                ><span class="n">11</span>Architecture</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#testing"
-                                ><span class="n">12</span>Testing</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#packaging"
-                                ><span class="n">13</span>Packaging</a
-                            >
-                        </li>
-                        <li>
-                            <a href="#development"
-                                ><span class="n">14</span>Development</a
-                            >
-                        </li>
-                    </ol>
-                </details>
-                <section
-                    class="section"
-                    id="overview"
-                    aria-labelledby="overview-title"
-                >
+                <section class="section" id="overview" aria-labelledby="overview-title">
                     <p class="kicker">01</p>
                     <h2 id="overview-title">Overview</h2>
                     <p>
-                        QuickSpot turns this computer into a Spotify speaker and
-                        puts playback controls in the GNOME top bar. It uses
-                        <a
-                            href="https://developer.spotify.com/documentation/soloist"
+                        QuickSpot turns this computer into a Spotify speaker and puts
+                        playback controls in the GNOME top bar. It uses
+                        <a href="https://developer.spotify.com/documentation/soloist"
                             >Spotify Soloist</a
                         >
                         for audio playback, downloaded separately from Spotify.
                     </p>
                     <p>
-                        The extension, the player service, and the optional
-                        playlist library login have separate lifetimes.
-                        Disabling the extension leaves the player and its MPRIS
-                        media controls running. Pairing the speaker does not
-                        connect the playlist library.
+                        The extension, the player service, and the optional playlist
+                        library login have separate lifetimes. Disabling the extension
+                        leaves the player and its MPRIS media controls running. Pairing
+                        the speaker does not connect the playlist library.
                     </p>
                     <div class="cards">
                         <article class="card">
                             <h3>A Spotify speaker</h3>
                             <p>
-                                Install and manage Soloist from preferences.
-                                Pair once through Spotify’s phone or desktop
-                                app.
+                                Install and manage Soloist from preferences. Pair once
+                                through Spotify’s phone or desktop app.
                             </p>
                         </article>
                         <article class="card">
                             <h3>Your music in the panel</h3>
                             <p>
-                                Previous, play/pause, next, device activation,
-                                shuffle, Liked Songs, and named playlist
-                                shortcuts.
+                                Previous, play/pause, next, device activation, shuffle,
+                                Liked Songs, and named playlist shortcuts.
                             </p>
                         </article>
                     </div>
                 </section>
-                <section
-                    class="section"
-                    id="install"
-                    aria-labelledby="install-title"
-                >
+                <section class="section" id="install" aria-labelledby="install-title">
                     <p class="kicker">02</p>
                     <h2 id="install-title">Install</h2>
+                    <!-- quick-template:install:start -->
                     <p>
-                        Requires GNOME Shell 50; GJS, libsecret, libsoup 3, GTK
-                        4, and libadwaita; Python 3.12 or newer; a graphical
-                        systemd user session; and PipeWire or PulseAudio.
-                        Spotify Premium and your own Soloist API key are
-                        required. Official player downloads support x86_64,
+                        Requires GNOME Shell 50. Requires GJS, libsecret, libsoup 3, GTK
+                        4, libadwaita, Python 3.12 or newer, a graphical systemd user
+                        session, PipeWire or PulseAudio, Spotify Premium, and your own
+                        Soloist API key. Official Soloist downloads support x86_64,
                         aarch64, and armv7l Linux.
                     </p>
+                    <h3>From a release</h3>
                     <p>
-                        With mise activated in your shell and just available,
-                        install from a checkout with
-                        <a href="https://mise.jdx.dev/">mise</a>. GNOME
-                        libraries come from the host; mise supplies development
-                        tools.
+                        Download the latest release ZIP and install it for your user. xh
+                        is a download tool; you can also download the ZIP from GitHub in
+                        a browser. Installing compiles the settings schema.
                     </p>
                     <div class="code night">
-                        <header>Shell</header>
-                        <pre tabindex="0">
-just setup
-just install</pre>
+                        <div class="code-label">Shell</div>
+                        <pre><code>xh --download GET https://github.com/Ghost-Assembly/quickspot/releases/latest/download/<!--email_off-->quickspot@napalm255.github.io<!--/email_off-->.shell-extension.zip
+gnome-extensions install --force <!--email_off-->quickspot@napalm255.github.io<!--/email_off-->.shell-extension.zip</code></pre>
                     </div>
                     <p>
-                        The build creates
-                        <code
-                            ><!--email_off-->quickspot@napalm255.github.io.shell-extension.zip<!--/email_off--></code
-                        >. Installation unpacks it and compiles its settings
-                        schema. Log out and back in so GNOME discovers the
-                        extension, then enable it and open preferences:
+                        Log out and back in so GNOME discovers the extension, then
+                        enable it:
                     </p>
                     <div class="code night">
-                        <header>Shell</header>
-                        <pre tabindex="0">
-just enable
-just prefs</pre>
+                        <div class="code-label">Shell</div>
+                        <pre><code>gnome-extensions enable <!--email_off-->quickspot@napalm255.github.io<!--/email_off--></code></pre>
+                    </div>
+                    <h3>From a clone</h3>
+                    <p>
+                        Install mise and activate it in your shell. Clone the
+                        repository, install its pinned tools, and build and install the
+                        same ZIP used for releases:
+                    </p>
+                    <div class="code night">
+                        <div class="code-label">Shell</div>
+                        <pre><code>git clone https://github.com/Ghost-Assembly/quickspot.git
+cd quickspot
+mise install
+mise exec -- just setup
+mise exec -- just install</code></pre>
                     </div>
                     <p>
-                        After updating a loaded extension, log out and back in
-                        to load its new panel code. Opening preferences does not
+                        Log out and back in, then run just enable. Run just prefs to
+                        open preferences. After updating a loaded extension, start a new
+                        session to load its new code; opening preferences does not
                         reload GNOME Shell.
                     </p>
+                    <!-- quick-template:install:end -->
                 </section>
                 <section
                     class="section"
-                    id="player"
-                    aria-labelledby="player-title"
+                    id="uninstall"
+                    aria-labelledby="uninstall-title"
                 >
                     <p class="kicker">03</p>
+                    <h2 id="uninstall-title">Uninstall</h2>
+                    <!-- quick-template:uninstall:start -->
+                    <p>
+                        Disable and uninstall the extension for your user. These
+                        commands preserve saved settings and other user data.
+                    </p>
+                    <div class="code night">
+                        <div class="code-label">Shell</div>
+                        <pre><code>if systemctl --user cat quickspot-soloist.service &gt;/dev/null 2&gt;&amp;1; then
+    systemctl --user disable --now quickspot-soloist.service
+fi
+gnome-extensions disable <!--email_off-->quickspot@napalm255.github.io<!--/email_off-->
+gnome-extensions uninstall <!--email_off-->quickspot@napalm255.github.io<!--/email_off--></code></pre>
+                    </div>
+                    <p>
+                        From a clone, just uninstall performs the same steps. Disabling
+                        with just disable leaves the extension installed.
+                    </p>
+                    <!-- quick-template:uninstall:end -->
+                    <p>
+                        This preserves keyring credentials, player data, the downloaded
+                        binary, and the disabled service definition. Disabling the
+                        extension alone leaves the independent player service running;
+                        stop it from preferences or with systemctl --user stop
+                        quickspot-soloist.service.
+                    </p>
+                </section>
+                <section class="section" id="player" aria-labelledby="player-title">
+                    <p class="kicker">04</p>
                     <h2 id="player-title">Player setup and pairing</h2>
                     <ol class="steps">
                         <li>
@@ -504,8 +434,7 @@ just prefs</pre>
                                 <a
                                     href="https://developer.spotify.com/dashboard/soloist"
                                     >Soloist API key</a
-                                >, enter it, and choose
-                                <strong>Save</strong>.</span
+                                >, enter it, and choose <strong>Save</strong>.</span
                             >
                         </li>
                         <li>
@@ -518,18 +447,16 @@ just prefs</pre>
                         <li>
                             <span class="n" aria-hidden="true">03</span
                             ><span
-                                >Open Spotify’s phone or desktop app on the same
-                                local network. Play something and select
-                                <strong>QuickSpot</strong> in its device
-                                menu.</span
+                                >Open Spotify’s phone or desktop app on the same local
+                                network. Play something and select
+                                <strong>QuickSpot</strong> in its device menu.</span
                             >
                         </li>
                     </ol>
                     <p>
-                        The web player cannot discover an unpaired speaker. The
-                        device name can be changed in preferences. QuickSpot
-                        remembers pairing through Soloist’s stored device
-                        identity.
+                        The web player cannot discover an unpaired speaker. The device
+                        name can be changed in preferences. QuickSpot remembers pairing
+                        through Soloist’s stored device identity.
                     </p>
                     <table class="table">
                         <thead>
@@ -575,17 +502,14 @@ just prefs</pre>
                             <tr>
                                 <td data-label="State">Ready to pair</td>
                                 <td data-label="Meaning">
-                                    The local API is connected; pair through
-                                    Spotify.
+                                    The local API is connected; pair through Spotify.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="State">
-                                    Paired · ready to play
-                                </td>
+                                <td data-label="State">Paired · ready to play</td>
                                 <td data-label="Meaning">
-                                    Pairing is complete; this speaker is not the
-                                    active device.
+                                    Pairing is complete; this speaker is not the active
+                                    device.
                                 </td>
                             </tr>
                             <tr>
@@ -593,32 +517,26 @@ just prefs</pre>
                                     Connected · this device is active
                                 </td>
                                 <td data-label="Meaning">
-                                    Spotify has selected this speaker. Check
-                                    audio output separately.
+                                    Spotify has selected this speaker. Check audio
+                                    output separately.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                     <p>
-                        A running service alone does not prove pairing or
-                        audible playback. <strong>Stop</strong> remains
-                        available while the player runs, including when GNOME
-                        Keyring is locked.
+                        A running service alone does not prove pairing or audible
+                        playback. <strong>Stop</strong> remains available while the
+                        player runs, including when GNOME Keyring is locked.
                     </p>
                 </section>
-                <section
-                    class="section"
-                    id="playback"
-                    aria-labelledby="playback-title"
-                >
-                    <p class="kicker">04</p>
+                <section class="section" id="playback" aria-labelledby="playback-title">
+                    <p class="kicker">05</p>
                     <h2 id="playback-title">Playback controls</h2>
                     <p>
                         Open the top-bar item to use the menu. While a track is
-                        available on the active device, its label shows artist
-                        and title. Otherwise, only the music icon appears.
-                        Playback actions become available when the local speaker
-                        is paired.
+                        available on the active device, its label shows artist and
+                        title. Otherwise, only the music icon appears. Playback actions
+                        become available when the local speaker is paired.
                     </p>
                     <table class="table">
                         <thead>
@@ -645,8 +563,7 @@ just prefs</pre>
                             <tr>
                                 <td data-label="Control">Shuffle → On / Off</td>
                                 <td data-label="Behavior">
-                                    Activate the speaker and change ordinary
-                                    shuffle.
+                                    Activate the speaker and change ordinary shuffle.
                                 </td>
                             </tr>
                             <tr>
@@ -672,61 +589,50 @@ just prefs</pre>
                             <tr>
                                 <td data-label="Control">Start / Stop</td>
                                 <td data-label="Behavior">
-                                    Control the independent player service when
-                                    setup permits it.
+                                    Control the independent player service when setup
+                                    permits it.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Control">
-                                    Open Spotify in browser
-                                </td>
+                                <td data-label="Control">Open Spotify in browser</td>
                                 <td data-label="Behavior">
                                     Open the Spotify web player.
                                 </td>
                             </tr>
                             <tr>
                                 <td data-label="Control">QuickSpot settings</td>
-                                <td data-label="Behavior">
-                                    Open GTK preferences.
-                                </td>
+                                <td data-label="Behavior">Open GTK preferences.</td>
                             </tr>
                         </tbody>
                     </table>
                     <p>
-                        Smart Shuffle is displayed when Soloist reports it.
-                        Enable that mode in Spotify’s phone app with this
-                        speaker selected;
-                        <strong>About Smart Shuffle…</strong> explains the
-                        limitation.
+                        Smart Shuffle is displayed when Soloist reports it. Enable that
+                        mode in Spotify’s phone app with this speaker selected;
+                        <strong>About Smart Shuffle…</strong> explains the limitation.
                     </p>
                 </section>
-                <section
-                    class="section"
-                    id="library"
-                    aria-labelledby="library-title"
-                >
-                    <p class="kicker">05</p>
+                <section class="section" id="library" aria-labelledby="library-title">
+                    <p class="kicker">06</p>
                     <h2 id="library-title">Playlists and library login</h2>
                     <h3>Named playlist shortcuts</h3>
                     <p>
-                        On <strong>Library → Playlist shortcuts</strong>, enter
-                        a name and a playlist ID, Spotify link, or URI. These
-                        three forms identify the same example playlist:
+                        On <strong>Library → Playlist shortcuts</strong>, enter a name
+                        and a playlist ID, Spotify link, or URI. These three forms
+                        identify the same example playlist:
                     </p>
                     <div class="code night">
                         <header>Playlist input</header>
-                        <pre tabindex="0">
+                        <pre>
 37i9dQZF1DXcBWIGoYBM5
 https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5
 spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                     </div>
                     <p>
-                        Choose <strong>Add</strong>, then select the name in the
-                        panel. Shortcuts work without the optional library
-                        login, including Discover Weekly and other playlists
-                        Spotify may omit from the library API. Add the same
-                        playlist under a new name to rename it;
-                        <strong>Remove</strong> deletes its shortcut. Up to 100
+                        Choose <strong>Add</strong>, then select the name in the panel.
+                        Shortcuts work without the optional library login, including
+                        Discover Weekly and other playlists Spotify may omit from the
+                        library API. Add the same playlist under a new name to rename
+                        it; <strong>Remove</strong> deletes its shortcut. Up to 100
                         shortcuts can be saved.
                     </p>
                     <h3>Saved playlists and Liked Songs</h3>
@@ -735,13 +641,12 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                             <span class="n" aria-hidden="true">01</span
                             ><span
                                 >Create or use a
-                                <a
-                                    href="https://developer.spotify.com/dashboard"
+                                <a href="https://developer.spotify.com/dashboard"
                                     >Spotify developer app</a
                                 >
                                 and register
-                                <code>http://127.0.0.1:43821/callback</code> as
-                                its redirect URI.</span
+                                <code>http://127.0.0.1:43821/callback</code> as its
+                                redirect URI.</span
                             >
                         </li>
                         <li>
@@ -749,17 +654,15 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                             ><span
                                 >Enter the app’s client ID on the
                                 <strong>Library</strong> page and choose
-                                <strong>Connect</strong>. Finish authorization
-                                in the browser while keeping preferences
-                                open.</span
+                                <strong>Connect</strong>. Finish authorization in the
+                                browser while keeping preferences open.</span
                             >
                         </li>
                         <li>
                             <span class="n" aria-hidden="true">03</span
                             ><span
-                                >Authorize the same account paired with the
-                                speaker. Then use
-                                <strong>Your playlists</strong> or
+                                >Authorize the same account paired with the speaker.
+                                Then use <strong>Your playlists</strong> or
                                 <strong>Liked Songs</strong> in the panel.</span
                             >
                         </li>
@@ -767,21 +670,20 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                     <p>
                         No client secret is needed. Login uses PKCE with
                         <code>playlist-read-private</code> and
-                        <code>playlist-read-collaborative</code>. Tokens are
-                        bound to the client ID that issued them. Playlist
-                        loading follows pagination, refreshes expired tokens,
-                        and observes rate limits.
+                        <code>playlist-read-collaborative</code>. Tokens are bound to
+                        the client ID that issued them. Playlist loading follows
+                        pagination, refreshes expired tokens, and observes rate limits.
                     </p>
                     <p>
                         <strong>Cancel</strong> stops the current login; closing
                         preferences cancels it too.
                         <strong>Reconnect</strong> authorizes again, and
-                        <strong>Disconnect</strong> removes the saved playlist
-                        login without unpairing the speaker.
+                        <strong>Disconnect</strong> removes the saved playlist login
+                        without unpairing the speaker.
                     </p>
                     <p>
-                        Development-mode apps require their owner to retain
-                        Premium and allow the connecting account. See Spotify’s
+                        Development-mode apps require their owner to retain Premium and
+                        allow the connecting account. See Spotify’s
                         <a
                             href="https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide"
                             >development-mode requirements</a
@@ -794,7 +696,7 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                     id="preferences"
                     aria-labelledby="preferences-title"
                 >
-                    <p class="kicker">06</p>
+                    <p class="kicker">07</p>
                     <h2 id="preferences-title">Preferences</h2>
                     <p>
                         Open preferences with
@@ -814,17 +716,15 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                                     Install / Repair / Update
                                 </td>
                                 <td data-label="Effect">
-                                    Download Soloist or restore its user
-                                    service, according to installation state.
+                                    Download Soloist or restore its user service,
+                                    according to installation state.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Setting or action">
-                                    Start at login
-                                </td>
+                                <td data-label="Setting or action">Start at login</td>
                                 <td data-label="Effect">
-                                    Enable or disable the systemd user service
-                                    for login.
+                                    Enable or disable the systemd user service for
+                                    login.
                                 </td>
                             </tr>
                             <tr>
@@ -832,17 +732,15 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                                     Name shown in Spotify
                                 </td>
                                 <td data-label="Effect">
-                                    Default: QuickSpot. Saving restarts a
-                                    running player.
+                                    Default: QuickSpot. Saving restarts a running
+                                    player.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Setting or action">
-                                    Soloist API key
-                                </td>
+                                <td data-label="Setting or action">Soloist API key</td>
                                 <td data-label="Effect">
-                                    Store the key in GNOME Keyring. Saving
-                                    restarts a running player.
+                                    Store the key in GNOME Keyring. Saving restarts a
+                                    running player.
                                 </td>
                             </tr>
                             <tr>
@@ -850,8 +748,8 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                                     Import credentials
                                 </td>
                                 <td data-label="Effect">
-                                    Read a selected .env file with a Soloist key
-                                    and/or library client ID.
+                                    Read a selected .env file with a Soloist key and/or
+                                    library client ID.
                                 </td>
                             </tr>
                             <tr>
@@ -859,8 +757,8 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                                     Spotify client ID / Connect
                                 </td>
                                 <td data-label="Effect">
-                                    Authorize the optional playlist library in
-                                    your browser.
+                                    Authorize the optional playlist library in your
+                                    browser.
                                 </td>
                             </tr>
                             <tr>
@@ -868,16 +766,15 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                                     Playlist shortcuts
                                 </td>
                                 <td data-label="Effect">
-                                    Add, rename, and remove saved playlist
-                                    choices.
+                                    Add, rename, and remove saved playlist choices.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                     <p>
-                        An update attempts to restore a previously running
-                        service even if downloading fails or preferences closes.
-                        Soloist builds expire after 90 days; use
+                        An update attempts to restore a previously running service even
+                        if downloading fails or preferences closes. Soloist builds
+                        expire after 90 days; use
                         <strong>Update</strong> to install a newer build. See
                         <a
                             href="https://developer.spotify.com/documentation/soloist/reference/downloads-and-updates"
@@ -886,41 +783,34 @@ spotify:playlist:37i9dQZF1DXcBWIGoYBM5</pre>
                     </p>
                     <h3>Credential import example</h3>
                     <p>
-                        Use literal values in a private <code>.env</code> file.
-                        Replace these placeholders with your own values; do not
-                        commit the file:
+                        Use literal values in a private <code>.env</code> file. Replace
+                        these placeholders with your own values; do not commit the file:
                     </p>
                     <div class="code night">
                         <header>.env (placeholders)</header>
-                        <pre tabindex="0">
+                        <pre>
 SPOTIFY_SOLOIST_KEY=your-soloist-api-key
 SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                     </div>
                     <p>
-                        Select it with <strong>Import credentials</strong>, or
-                        import this checkout’s <code>.env</code>:
+                        Select it with <strong>Import credentials</strong>, or import
+                        this checkout’s <code>.env</code>:
                     </p>
                     <div class="code night">
                         <header>Shell</header>
-                        <pre tabindex="0">just import-credentials</pre>
+                        <pre>just import-credentials</pre>
                     </div>
                     <p>
-                        Importing the client ID does not authorize the library.
-                        Choose <strong>Connect</strong> separately. The importer
-                        parses values literally rather than executing shell
-                        code.
+                        Importing the client ID does not authorize the library. Choose
+                        <strong>Connect</strong> separately. The importer parses values
+                        literally rather than executing shell code.
                     </p>
                 </section>
-                <section
-                    class="section"
-                    id="quality"
-                    aria-labelledby="quality-title"
-                >
-                    <p class="kicker">07</p>
+                <section class="section" id="quality" aria-labelledby="quality-title">
+                    <p class="kicker">08</p>
                     <h2 id="quality-title">Audio quality</h2>
                     <p>
-                        Choose quality in Spotify with this speaker selected.
-                        Soloist’s
+                        Choose quality in Spotify with this speaker selected. Soloist’s
                         <a
                             href="https://developer.spotify.com/documentation/soloist/reference/command-line"
                             >command line</a
@@ -931,8 +821,7 @@ SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                             >local API</a
                         >
                         do not expose quality controls or the active bitrate to
-                        QuickSpot. QuickSpot cannot confirm that a stream is
-                        lossless.
+                        QuickSpot. QuickSpot cannot confirm that a stream is lossless.
                     </p>
                 </section>
                 <section
@@ -940,17 +829,17 @@ SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                     id="troubleshooting"
                     aria-labelledby="troubleshooting-title"
                 >
-                    <p class="kicker">08</p>
+                    <p class="kicker">09</p>
                     <h2 id="troubleshooting-title">Troubleshooting</h2>
                     <p>Start with the credential-safe diagnostic command:</p>
                     <div class="code night">
                         <header>Shell</header>
-                        <pre tabindex="0">just doctor</pre>
+                        <pre>just doctor</pre>
                     </div>
                     <p>
-                        It checks installation, service state, saved-key
-                        presence, local API connectivity, and pairing without
-                        printing credentials or account information.
+                        It checks installation, service state, saved-key presence, local
+                        API connectivity, and pairing without printing credentials or
+                        account information.
                     </p>
                     <table class="table">
                         <thead>
@@ -975,12 +864,10 @@ SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Symptom">
-                                    Player failed to start
-                                </td>
+                                <td data-label="Symptom">Player failed to start</td>
                                 <td data-label="Next step">
-                                    Check the saved API key, network, and audio
-                                    output. An expired build needs Update.
+                                    Check the saved API key, network, and audio output.
+                                    An expired build needs Update.
                                 </td>
                             </tr>
                             <tr>
@@ -992,24 +879,19 @@ SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Symptom">
-                                    Speaker missing in Spotify
-                                </td>
+                                <td data-label="Symptom">Speaker missing in Spotify</td>
                                 <td data-label="Next step">
-                                    Use the phone or desktop app on the same
-                                    network. Check guest Wi-Fi, client
-                                    isolation, VPN routing, and local-network
-                                    permission on iOS.
+                                    Use the phone or desktop app on the same network.
+                                    Check guest Wi-Fi, client isolation, VPN routing,
+                                    and local-network permission on iOS.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Symptom">
-                                    Library login fails
-                                </td>
+                                <td data-label="Symptom">Library login fails</td>
                                 <td data-label="Next step">
-                                    Check the exact loopback redirect URI,
-                                    client ID, developer-app access, and Premium
-                                    requirements. Keep preferences open.
+                                    Check the exact loopback redirect URI, client ID,
+                                    developer-app access, and Premium requirements. Keep
+                                    preferences open.
                                 </td>
                             </tr>
                             <tr>
@@ -1017,23 +899,22 @@ SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                                     Playlist missing from library
                                 </td>
                                 <td data-label="Next step">
-                                    Refresh playlists or add a manual playlist
-                                    shortcut.
+                                    Refresh playlists or add a manual playlist shortcut.
                                 </td>
                             </tr>
                             <tr>
                                 <td data-label="Symptom">Paired but silent</td>
                                 <td data-label="Next step">
-                                    Select this speaker and check the host audio
-                                    output; pairing alone does not verify audio.
+                                    Select this speaker and check the host audio output;
+                                    pairing alone does not verify audio.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                     <p>
-                        Discovery uses multicast DNS (UDP 5353) and a dynamic
-                        TCP pairing port, separate from the loopback API. Review
-                        applicable network and firewall rules. See
+                        Discovery uses multicast DNS (UDP 5353) and a dynamic TCP
+                        pairing port, separate from the loopback API. Review applicable
+                        network and firewall rules. See
                         <a
                             href="https://support.spotify.com/us/article/spotify-connect/"
                             >Spotify Connect troubleshooting</a
@@ -1041,32 +922,26 @@ SPOTIFY_CLIENT_ID=your-developer-app-client-id</pre>
                     </p>
                     <div class="code night">
                         <header>Shell</header>
-                        <pre tabindex="0">
+                        <pre>
 just logs
 just logs-player
 systemctl --user stop quickspot-soloist.service
 systemctl --user start quickspot-soloist.service</pre>
                     </div>
                     <p>
-                        Extension logs and fixed launcher diagnostics omit
-                        credentials, account data, and track metadata. Raw
-                        Soloist output is silenced because it can contain
-                        sensitive information.
+                        Extension logs and fixed launcher diagnostics omit credentials,
+                        account data, and track metadata. Raw Soloist output is silenced
+                        because it can contain sensitive information.
                     </p>
                 </section>
-                <section
-                    class="section"
-                    id="security"
-                    aria-labelledby="security-title"
-                >
-                    <p class="kicker">09</p>
+                <section class="section" id="security" aria-labelledby="security-title">
+                    <p class="kicker">10</p>
                     <h2 id="security-title">Storage and security</h2>
                     <p>
                         API keys and OAuth tokens live in GNOME Keyring, outside
-                        GSettings, service files, and the extension bundle.
-                        Device names and playlist shortcut names and URIs live
-                        in GSettings. XDG paths fall back to their standard
-                        defaults when unset.
+                        GSettings, service files, and the extension bundle. Device names
+                        and playlist shortcut names and URIs live in GSettings. XDG
+                        paths fall back to their standard defaults when unset.
                     </p>
                     <table class="table">
                         <thead>
@@ -1085,13 +960,9 @@ systemctl --user start quickspot-soloist.service</pre>
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Data">
-                                    Device identity and pairing
-                                </td>
+                                <td data-label="Data">Device identity and pairing</td>
                                 <td data-label="Location">
-                                    <code
-                                        >$XDG_DATA_HOME/quickspot/player/</code
-                                    >
+                                    <code>$XDG_DATA_HOME/quickspot/player/</code>
                                 </td>
                             </tr>
                             <tr>
@@ -1113,59 +984,28 @@ systemctl --user start quickspot-soloist.service</pre>
                         </tbody>
                     </table>
                     <p>
-                        Soloist requires the API key in process arguments;
-                        processes with sufficient inspection access can see it.
-                        Its WebSocket API binds to <code>127.0.0.1</code> on a
-                        dynamic port.
+                        Soloist requires the API key in process arguments; processes
+                        with sufficient inspection access can see it. Its WebSocket API
+                        binds to <code>127.0.0.1</code> on a dynamic port.
                         <a
                             href="https://developer.spotify.com/documentation/soloist/reference/websocket-api"
-                            >Upstream provides no authentication or Origin
-                            validation</a
-                        >, so loopback binding does not isolate it from local
-                        processes or browser code able to reach the port.
+                            >Upstream provides no authentication or Origin validation</a
+                        >, so loopback binding does not isolate it from local processes
+                        or browser code able to reach the port.
                     </p>
                     <p>
-                        The installer bounds downloads and extraction, rejects
-                        unsafe archive members, restricts redirects to Spotify’s
-                        HTTPS download origin, and checks the binary’s version
-                        response before replacement. Downloads use mutable
-                        upstream URLs without independent signature or checksum
-                        verification. Archive validation does not prove
-                        authenticity beyond HTTPS.
+                        The installer bounds downloads and extraction, rejects unsafe
+                        archive members, restricts redirects to Spotify’s HTTPS download
+                        origin, and checks the binary’s version response before
+                        replacement. Downloads use mutable upstream URLs without
+                        independent signature or checksum verification. Archive
+                        validation does not prove authenticity beyond HTTPS.
                     </p>
                     <p>
                         Soloist is downloaded separately and never included in
-                        QuickSpot’s bundle. Preserve its upstream terms and
-                        third-party notices.
+                        QuickSpot’s bundle. Preserve its upstream terms and third-party
+                        notices.
                     </p>
-                </section>
-                <section
-                    class="section"
-                    id="uninstall"
-                    aria-labelledby="uninstall-title"
-                >
-                    <p class="kicker">10</p>
-                    <h2 id="uninstall-title">Uninstall</h2>
-                    <div class="code night">
-                        <header>Shell</header>
-                        <pre tabindex="0">just uninstall</pre>
-                    </div>
-                    <p>
-                        This stops and disables Soloist, then removes the
-                        extension. It preserves keyring credentials, player
-                        data, the downloaded binary, and the disabled service
-                        definition.
-                    </p>
-                    <p>
-                        Disabling the extension alone leaves the independent
-                        player service running. Stop it from preferences or
-                        with:
-                    </p>
-                    <div class="code night">
-                        <header>Shell</header>
-                        <pre tabindex="0">
-systemctl --user stop quickspot-soloist.service</pre>
-                    </div>
                 </section>
                 <section
                     class="section"
@@ -1175,10 +1015,10 @@ systemctl --user stop quickspot-soloist.service</pre>
                     <p class="kicker">11</p>
                     <h2 id="architecture-title">Architecture</h2>
                     <p>
-                        QuickSpot uses native GJS ES modules. The GNOME Shell
-                        panel, GTK preferences, and service runner execute in
-                        separate processes. Shell UI imports stay in the
-                        extension; GTK and Adwaita imports stay in preferences.
+                        QuickSpot uses native GJS ES modules. The GNOME Shell panel, GTK
+                        preferences, and service runner execute in separate processes.
+                        Shell UI imports stay in the extension; GTK and Adwaita imports
+                        stay in preferences.
                     </p>
                     <table class="table">
                         <thead>
@@ -1191,46 +1031,39 @@ systemctl --user stop quickspot-soloist.service</pre>
                             <tr>
                                 <td data-label="Component">extension.js</td>
                                 <td data-label="Responsibility">
-                                    Top-bar item, menus, playback actions, and
-                                    lifecycle teardown.
+                                    Top-bar item, menus, playback actions, and lifecycle
+                                    teardown.
                                 </td>
                             </tr>
                             <tr>
                                 <td data-label="Component">prefs.js</td>
                                 <td data-label="Responsibility">
-                                    GTK/Adwaita setup, credential entry, library
-                                    login, and shortcuts.
+                                    GTK/Adwaita setup, credential entry, library login,
+                                    and shortcuts.
                                 </td>
                             </tr>
                             <tr>
                                 <td data-label="Component">modules/model.js</td>
                                 <td data-label="Responsibility">
-                                    Pure input validation and presentation
-                                    decisions, shared with Node tests.
+                                    Pure input validation and presentation decisions,
+                                    shared with Node tests.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Component">
-                                    modules/player.js
-                                </td>
+                                <td data-label="Component">modules/player.js</td>
                                 <td data-label="Responsibility">
-                                    Installation, service, credentials, and
-                                    playback as distinct states.
+                                    Installation, service, credentials, and playback as
+                                    distinct states.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Component">
-                                    modules/soloist.js
-                                </td>
+                                <td data-label="Component">modules/soloist.js</td>
                                 <td data-label="Responsibility">
-                                    Loopback WebSocket connection and playback
-                                    commands.
+                                    Loopback WebSocket connection and playback commands.
                                 </td>
                             </tr>
                             <tr>
-                                <td data-label="Component">
-                                    modules/spotify.js
-                                </td>
+                                <td data-label="Component">modules/spotify.js</td>
                                 <td data-label="Responsibility">
                                     Web API requests, PKCE authorization, and
                                     client-bound tokens.
@@ -1241,8 +1074,7 @@ systemctl --user stop quickspot-soloist.service</pre>
                                     modules/secrets.js / credentials.js
                                 </td>
                                 <td data-label="Responsibility">
-                                    GNOME Keyring and bounded literal credential
-                                    import.
+                                    GNOME Keyring and bounded literal credential import.
                                 </td>
                             </tr>
                             <tr>
@@ -1256,8 +1088,8 @@ systemctl --user stop quickspot-soloist.service</pre>
                                     scripts/soloist-runner.js
                                 </td>
                                 <td data-label="Responsibility">
-                                    Player process and MPRIS bridge independent
-                                    of the extension.
+                                    Player process and MPRIS bridge independent of the
+                                    extension.
                                 </td>
                             </tr>
                             <tr>
@@ -1265,56 +1097,54 @@ systemctl --user stop quickspot-soloist.service</pre>
                                     scripts/install_soloist.py
                                 </td>
                                 <td data-label="Responsibility">
-                                    Bounded download, safe extraction, service
-                                    setup, and updates.
+                                    Bounded download, safe extraction, service setup,
+                                    and updates.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                     <p>
-                        The panel and service bridge control Soloist through its
-                        local API. Library authorization supplies playlist
-                        choices and Liked Songs separately. Teardown releases
-                        signals, timers, sockets, subprocesses, and UI
-                        references; asynchronous completions are guarded against
-                        closed windows and replaced clients.
+                        The panel and service bridge control Soloist through its local
+                        API. Library authorization supplies playlist choices and Liked
+                        Songs separately. Teardown releases signals, timers, sockets,
+                        subprocesses, and UI references; asynchronous completions are
+                        guarded against closed windows and replaced clients.
                     </p>
                 </section>
-                <section
-                    class="section"
-                    id="testing"
-                    aria-labelledby="testing-title"
-                >
+                <section class="section" id="testing" aria-labelledby="testing-title">
                     <p class="kicker">12</p>
                     <h2 id="testing-title">Testing</h2>
+                    <!-- quick-template:testing:start -->
                     <p>
-                        <code>just test</code> runs Node validation tests,
-                        Python installer and bundle tests, and native GJS
-                        integration tests. Fixtures use temporary XDG paths and
-                        private session buses, without the real account,
-                        keyring, player service, or desktop settings.
+                        just test runs the JavaScript suite with Vitest, the shared
+                        tooling tests, and any project-specific offline suites. just
+                        coverage reports the JavaScript coverage universe, including
+                        untested runtime files. Test stubs and generated reports are not
+                        runtime source.
                     </p>
                     <p>
-                        <code>just test-live</code> adds headless GNOME Shell
-                        and GTK checks for startup rollback, populated menus
-                        across disable/re-enable, preferences, and command-line
-                        uninstall. It leaves the desktop’s enabled extensions
-                        alone.
+                        just test-docs runs Playwright and axe in Chromium and Firefox:
+                        dark and light accessibility checks, keyboard navigation, mobile
+                        layout, reduced motion, links, metadata, local assets, and no
+                        page JavaScript. Automated accessibility checks still require
+                        human review of reading and focus order.
                     </p>
                     <p>
-                        <code>just test-docs</code> checks this site in Chromium
-                        and Firefox: accessibility in both color schemes,
-                        keyboard navigation, mobile layout, reduced motion,
-                        links, assets, and agreement with project metadata. The
-                        site ships no JavaScript and loads assets only from its
-                        own origin.
+                        just test-live checks the package and runs isolated GNOME
+                        lifecycle checks. It is a separate local check, not proof of
+                        compatibility from a hosted runner. Verify each declared GNOME
+                        version and complete the project&#x27;s manual checks before
+                        releasing.
                     </p>
+                    <!-- quick-template:testing:end -->
+                    <h3>Project checks</h3>
                     <p>
-                        Actual Spotify authorization, audible playback,
-                        discovery from another device, and stream quality
-                        require a real account and manual verification.
-                        Automated accessibility checks also need a human review
-                        of reading and focus order.
+                        Offline GJS and Python suites use temporary XDG paths and
+                        private buses. The isolated Shell and GTK checks cover startup
+                        rollback, populated menus across disable/re-enable, preferences,
+                        and command-line uninstall. Actual Spotify authorization,
+                        audible playback, discovery from another device, and audio
+                        quality require a real account and manual verification.
                     </p>
                 </section>
                 <section
@@ -1324,84 +1154,108 @@ systemctl --user stop quickspot-soloist.service</pre>
                 >
                     <p class="kicker">13</p>
                     <h2 id="packaging-title">Packaging</h2>
+                    <!-- quick-template:packaging:start -->
                     <div class="code night">
-                        <header>Shell</header>
-                        <pre tabindex="0">just build</pre>
+                        <div class="code-label">Shell</div>
+                        <pre><code>just build
+just pack-check</code></pre>
                     </div>
                     <p>
                         The output is
-                        <code
-                            ><!--email_off-->quickspot@napalm255.github.io.shell-extension.zip<!--/email_off--></code
-                        >
-                        at the repository root, like the other Quick projects.
-                        <code>scripts/build.py</code> validates the schema and
-                        packages an explicit runtime allowlist using Python’s
-                        standard library. <code>just install</code> builds that
-                        ZIP and installs it for the current user through
-                        <code>gnome-extensions install --force</code>.
+                        <!--email_off-->quickspot@napalm255.github.io<!--/email_off-->.shell-extension.zip
+                        at the repository root, with metadata.json at the archive root.
+                        Python&#x27;s standard library packages the explicit
+                        runtimeFiles allowlist in quick-project.json, using stable file
+                        order and timestamps.
                     </p>
                     <p>
-                        <code>just pack-check</code> compares every runtime file
-                        and its contents with GNOME’s official extension packer.
-                        It also runs before <code>just test-live</code>. Bundle
-                        tests verify excluded files stay outside the archive.
+                        just pack-check compares both filenames and file contents with
+                        GNOME&#x27;s official packer and validates shipped icons. Docs,
+                        tests, dependencies, credentials, downloaded binaries, and
+                        development artifacts stay outside the ZIP. Update the runtime
+                        allowlist when adding a runtime file.
+                    </p>
+                    <!-- quick-template:packaging:end -->
+                    <p>
+                        QuickSpot is GPL-3.0-or-later. Soloist has separate upstream
+                        terms and third-party notices and is downloaded outside the
+                        extension package.
+                    </p>
+                </section>
+                <section
+                    class="section"
+                    id="releasing"
+                    aria-labelledby="releasing-title"
+                >
+                    <p class="kicker">14</p>
+                    <h2 id="releasing-title">Releasing</h2>
+                    <!-- quick-template:releasing:start -->
+                    <p>
+                        Run just ci, just test-live, and the project manual checklist.
+                        Set metadata.json version-name and package.json version to the
+                        same new version and increment metadata.json version for the
+                        GNOME Extension Store. Update the npm lockfile, regenerate the
+                        docs, and commit the reviewed changes to main through a passing
+                        pull request.
                     </p>
                     <p>
-                        Docs, tests, npm dependencies, credentials, downloaded
-                        player binaries, and planning artifacts stay outside the
-                        ZIP. Update the allowlist when adding runtime files.
-                        QuickSpot is
-                        <a
-                            href="https://github.com/Ghost-Assembly/quickspot/blob/main/LICENSE"
-                            >GPL-3.0-or-later</a
-                        >; Soloist has separate terms and notices.
+                        Create and push a v-prefixed tag for that version. The release
+                        workflow verifies the version, main ancestry, and successful
+                        required checks for the tagged commit, then attaches its tested
+                        ZIP to a GitHub release. It does not upload to
+                        extensions.gnome.org; that submission and its review remain
+                        manual.
                     </p>
-                    <p>
-                        The repository currently provides local build and
-                        verification commands, with no automated release or
-                        documentation deployment workflow.
-                    </p>
+                    <!-- quick-template:releasing:end -->
                 </section>
                 <section
                     class="section"
                     id="development"
                     aria-labelledby="development-title"
                 >
-                    <p class="kicker">14</p>
+                    <p class="kicker">15</p>
                     <h2 id="development-title">Development</h2>
+                    <!-- quick-template:development:start -->
                     <p>
-                        <code>mise.toml</code> pins tool versions,
-                        <code>justfile</code> owns commands, and npm manages
-                        development dependencies and the lockfile. There is no
-                        transpilation step or npm runtime dependency.
+                        mise.toml pins runtime and CLI versions; justfile owns commands;
+                        npm owns development dependencies and the lockfile. GNOME
+                        libraries come from the host. On image-based Fedora, use the
+                        host&#x27;s available tools or a toolbox/distrobox for missing
+                        system packages; do not layer packages onto the OS.
                     </p>
                     <div class="code night">
-                        <header>Shell</header>
-                        <pre tabindex="0">
-just              # list recipes
-just setup        # tools, dependencies, docs browsers
-just fmt          # format changes
-just lint         # source, formatting, schemas
-just test         # offline behavior suites
-just test-docs    # Chromium and Firefox docs checks
-just security     # credential-safe secret scans
-just build        # extension ZIP at the repository root
-just pack-check   # compare with GNOME’s official packer
-just ci           # all checks and build
-just test-live    # isolated Shell and GTK checks
-just docs         # local docs at localhost:8000</pre>
+                        <div class="code-label">Shell</div>
+                        <pre><code>just setup        # install pinned tools, dependencies, and browsers
+just fmt          # format source and configuration
+just lint         # verify template, generated docs, source, and schemas
+just test         # JavaScript, Python, and project offline tests
+just coverage     # report JavaScript coverage without source exclusions
+just test-docs    # Chromium and Firefox documentation checks
+just security     # dependencies, secrets, and workflow checks
+just build        # build the runtime-only extension ZIP
+just pack-check   # compare files and contents with GNOME&#x27;s packer
+just ci           # complete local verification and packaging
+just test-live    # isolated GNOME lifecycle and project integration checks
+just docs         # serve the static site at localhost:8000
+just template-check  # verify the pinned canonical template
+just template-status # report a newer approved template revision</code></pre>
                     </div>
                     <p>
-                        Run <code>ci</code> before submitting changes and
-                        <code>test-live</code> when changing panel or
-                        preferences behavior. Keep documentation aligned with
-                        actual commands and code. See
-                        <a
-                            href="https://github.com/Ghost-Assembly/quickspot/blob/main/AGENTS.md"
-                            >the engineering instructions</a
-                        >
-                        for contribution conventions.
+                        GitHub requires local verification, security analysis, and
+                        completed Sonar analysis. The shared Sonar policy requires zero
+                        security, reliability, and maintainability issues and zero
+                        duplicated lines. Missing configuration fails instead of
+                        silently skipping analysis. Pages publishes the tested docs only
+                        after the required checks pass on main.
                     </p>
+                    <p>
+                        Common tooling and these instructions are generated from a
+                        pinned canonical template. Change that source and synchronize
+                        its approved revision; do not edit generated sections or locally
+                        bless drift. Extension-specific behavior belongs in project
+                        configuration and project.just.
+                    </p>
+                    <!-- quick-template:development:end -->
                 </section>
             </main>
         </div>
@@ -1417,8 +1271,7 @@ just docs         # local docs at localhost:8000</pre>
                 <div>
                     <b>Ghost Assembly</b
                     ><span
-                        >Small, sharp tools for the Linux desktop and the
-                        cloud.</span
+                        >Small, sharp tools for the Linux desktop and the cloud.</span
                     >
                 </div>
             </div>
@@ -1428,16 +1281,14 @@ just docs         # local docs at localhost:8000</pre>
                         <a href="https://ghost-assembly.com/">All projects</a>
                     </li>
                     <li>
-                        <a href="https://github.com/Ghost-Assembly/quickspot"
-                            >Source</a
-                        >
+                        <a href="https://github.com/Ghost-Assembly/quickspot">Source</a>
                     </li>
                     <li><a href="#security">Storage and security</a></li>
                 </ul>
             </nav>
             <p class="legal">
-                QuickSpot is free software under the GPL-3.0-or-later. Soloist
-                is downloaded separately under its upstream terms.
+                QuickSpot is free software under the GPL-3.0-or-later. Soloist is
+                downloaded separately under its upstream terms.
             </p>
         </footer>
     </body>

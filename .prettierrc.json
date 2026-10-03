@@ -1,11 +1,10 @@
 {
-    "singleQuote": true,
-    "tabWidth": 4,
-    "trailingComma": "all",
-    "overrides": [
-        {
-            "files": "docs/style.css",
-            "options": { "printWidth": 88 }
-        }
-    ]
+  "singleQuote": true,
+  "printWidth": 88,
+  "tabWidth": 4,
+  "semi": true,
+  "arrowParens": "avoid",
+  "overrides": [
+    { "files": ["*.yml", "*.yaml", "*.json"], "options": { "tabWidth": 2 } }
+  ]
 }

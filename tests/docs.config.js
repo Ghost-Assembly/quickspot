@@ -6,6 +6,7 @@ export default {
     sections: [
         ['overview', 'Overview'],
         ['install', 'Install'],
+        ['uninstall', 'Uninstall'],
         ['player', 'Player setup and pairing'],
         ['playback', 'Playback controls'],
         ['library', 'Playlists and library login'],
@@ -13,10 +14,10 @@ export default {
         ['quality', 'Audio quality'],
         ['troubleshooting', 'Troubleshooting'],
         ['security', 'Storage and security'],
-        ['uninstall', 'Uninstall'],
         ['architecture', 'Architecture'],
         ['testing', 'Testing'],
         ['packaging', 'Packaging'],
+        ['releasing', 'Releasing'],
         ['development', 'Development'],
     ],
     drawing: async (shot, expect) => {

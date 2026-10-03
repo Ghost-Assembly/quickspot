@@ -20,7 +20,8 @@ class BuildTests(unittest.TestCase):
     def test_bundle_contains_only_runtime_files(self) -> None:
         with tempfile.TemporaryDirectory() as work:
             root = Path(work)
-            for name in builder.RUNTIME_FILES:
+            shutil.copy2(ROOT / "quick-project.json", root / "quick-project.json")
+            for name in builder.runtime_files(ROOT):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / name, target)
@@ -44,7 +45,7 @@ class BuildTests(unittest.TestCase):
 
             with zipfile.ZipFile(artifact) as bundle:
                 files = {name for name in bundle.namelist() if not name.endswith("/")}
-                self.assertEqual(files, set(builder.RUNTIME_FILES))
+                self.assertEqual(files, set(builder.runtime_files(ROOT)))
                 self.assertIsNone(bundle.testzip())
             builder.check(root)
 
@@ -55,13 +56,14 @@ class BuildTests(unittest.TestCase):
             with zipfile.ZipFile(artifact, "w") as bundle:
                 for name, content in contents.items():
                     bundle.writestr(name, content)
-            with self.assertRaisesRegex(RuntimeError, "differs"):
+            with self.assertRaisesRegex(ValueError, "differs"):
                 builder.check(root)
 
     def test_invalid_schema_cannot_produce_a_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as work:
             root = Path(work)
-            for name in builder.RUNTIME_FILES:
+            shutil.copy2(ROOT / "quick-project.json", root / "quick-project.json")
+            for name in builder.runtime_files(ROOT):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / name, target)

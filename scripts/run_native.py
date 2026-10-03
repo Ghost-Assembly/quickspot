@@ -17,15 +17,16 @@ def main() -> None:
             "XDG_CONFIG_HOME": str(Path(work) / "config"),
             "GIO_USE_VFS": "local",
         }
-        subprocess.run(  # noqa: S603 -- fixed test executable and source
+        subprocess.run(
             [
                 "/usr/bin/dbus-run-session",
                 "--",
                 "/usr/bin/gjs",
                 "-m",
-                str(Path(__file__).resolve().parents[1] / "tests/gnome-integration.js"),
+                "tests/gnome-integration.js",
             ],
             env=environment,
+            cwd=Path(__file__).resolve().parents[1],
             check=True,
             timeout=30,
         )

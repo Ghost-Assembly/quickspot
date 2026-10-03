@@ -1,0 +1,5 @@
+{
+  "$schema": "project.schema.json",
+  "repository": "quickspot",
+  "requirements": "Requires GJS, libsecret, libsoup 3, GTK 4, libadwaita, Python 3.12 or newer, a graphical systemd user session, PipeWire or PulseAudio, Spotify Premium, and your own Soloist API key. Official Soloist downloads support x86_64, aarch64, and armv7l Linux."
+}
