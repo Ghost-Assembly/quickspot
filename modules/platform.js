@@ -19,42 +19,32 @@ export function runResult(argv, cancellable = null, timeout = 30) {
     );
     return new Promise((resolve, reject) => {
         let expired = false;
-        const timer = GLib.timeout_add_seconds(
-            GLib.PRIORITY_DEFAULT,
-            timeout,
-            () => {
-                expired = true;
-                process.force_exit();
-                return GLib.SOURCE_REMOVE;
-            },
-        );
-        process.communicate_utf8_async(
-            null,
-            cancellable,
-            (_process, result) => {
-                try {
-                    const [, output] = process.communicate_utf8_finish(result);
-                    if (expired) throw new Error('Command timed out.');
-                    resolve({
-                        status: process.get_if_exited()
-                            ? process.get_exit_status()
-                            : -1,
-                        output: output.trim(),
-                    });
-                } catch (_error) {
-                    if (cancellable?.is_cancelled()) process.force_exit();
-                    reject(
-                        new Error(
-                            expired
-                                ? 'The operation timed out. Try again.'
-                                : 'The operation was canceled or could not finish.',
-                        ),
-                    );
-                } finally {
-                    if (!expired) GLib.Source.remove(timer);
-                }
-            },
-        );
+        const timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, timeout, () => {
+            expired = true;
+            process.force_exit();
+            return GLib.SOURCE_REMOVE;
+        });
+        process.communicate_utf8_async(null, cancellable, (_process, result) => {
+            try {
+                const [, output] = process.communicate_utf8_finish(result);
+                if (expired) throw new Error('Command timed out.');
+                resolve({
+                    status: process.get_if_exited() ? process.get_exit_status() : -1,
+                    output: output.trim(),
+                });
+            } catch {
+                if (cancellable?.is_cancelled()) process.force_exit();
+                reject(
+                    new Error(
+                        expired
+                            ? 'The operation timed out. Try again.'
+                            : 'The operation was canceled or could not finish.',
+                    ),
+                );
+            } finally {
+                if (!expired) GLib.Source.remove(timer);
+            }
+        });
     });
 }
 
@@ -80,7 +70,7 @@ export async function serviceStatus(cancellable = null) {
         5,
     );
     const values = new Map(
-        result.output.split('\n').map((line) => {
+        result.output.split('\n').map(line => {
             const index = line.indexOf('=');
             return [line.slice(0, index), line.slice(index + 1)];
         }),
@@ -93,9 +83,7 @@ export async function serviceStatus(cancellable = null) {
         subState: values.get('SubState') ?? '',
         exitStatus: Number(values.get('ExecMainStatus') ?? 0),
         result: values.get('Result') ?? '',
-        autostart: ['enabled', 'enabled-runtime'].includes(
-            values.get('UnitFileState'),
-        ),
+        autostart: ['enabled', 'enabled-runtime'].includes(values.get('UnitFileState')),
     };
 }
 
@@ -116,25 +104,16 @@ export async function readText(file, limit, cancellable = null) {
             },
         );
     });
-    if (
-        info.get_file_type() !== Gio.FileType.REGULAR ||
-        info.get_size() > limit
-    )
-        throw new Error(
-            'Choose a regular credential file no larger than 64 KiB.',
-        );
+    if (info.get_file_type() !== Gio.FileType.REGULAR || info.get_size() > limit)
+        throw new Error('Choose a regular credential file no larger than 64 KiB.');
     const stream = await new Promise((resolve, reject) => {
-        file.read_async(
-            GLib.PRIORITY_DEFAULT,
-            cancellable,
-            (source, result) => {
-                try {
-                    resolve(source.read_finish(result));
-                } catch (error) {
-                    reject(error);
-                }
-            },
-        );
+        file.read_async(GLib.PRIORITY_DEFAULT, cancellable, (source, result) => {
+            try {
+                resolve(source.read_finish(result));
+            } catch (error) {
+                reject(error);
+            }
+        });
     });
     try {
         const chunks = [];
@@ -147,9 +126,7 @@ export async function readText(file, limit, cancellable = null) {
                     cancellable,
                     (source, result) => {
                         try {
-                            resolve(
-                                source.read_bytes_finish(result).get_data(),
-                            );
+                            resolve(source.read_bytes_finish(result).get_data());
                         } catch (error) {
                             reject(error);
                         }
@@ -175,14 +152,7 @@ export async function readText(file, limit, cancellable = null) {
 
 export function service(action, cancellable = null) {
     if (
-        ![
-            'start',
-            'stop',
-            'restart',
-            'enable',
-            'disable',
-            'is-active',
-        ].includes(action)
+        !['start', 'stop', 'restart', 'enable', 'disable', 'is-active'].includes(action)
     )
         throw new Error('Invalid service action.');
     return run(
@@ -195,21 +165,16 @@ export function writeService(extensionPath) {
     if (
         !GLib.path_is_absolute(extensionPath) ||
         Array.from(extensionPath).some(
-            (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+            char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
         )
     )
-        throw new Error(
-            'The extension path cannot be used in a service definition.',
-        );
+        throw new Error('The extension path cannot be used in a service definition.');
     const directory = GLib.build_filenamev([
         GLib.get_user_config_dir(),
         'systemd',
         'user',
     ]);
-    const target = GLib.build_filenamev([
-        directory,
-        'quickspot-soloist.service',
-    ]);
+    const target = GLib.build_filenamev([directory, 'quickspot-soloist.service']);
     const runner = `${extensionPath}/scripts/soloist-runner.js`;
     // systemd expands specifiers and environment variables even inside quotes.
     const escaped = runner

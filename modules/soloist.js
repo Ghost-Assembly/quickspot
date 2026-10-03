@@ -13,7 +13,7 @@ export class SoloistClient {
         this._socket = null;
         this._connecting = false;
         this._signals = [];
-        this._commands = Promise.resolve();
+        this._commands = null;
         this._pending = null;
         this.state = {
             connected: false,
@@ -46,10 +46,7 @@ export class SoloistClient {
             Gio.FileQueryInfoFlags.NONE,
             null,
         );
-        if (
-            info.get_file_type() !== Gio.FileType.REGULAR ||
-            info.get_size() > 64
-        )
+        if (info.get_file_type() !== Gio.FileType.REGULAR || info.get_size() > 64)
             throw new Error('Invalid local endpoint file.');
         const [, contents] = source.load_contents(null);
         return new TextDecoder().decode(contents).trim();
@@ -70,7 +67,7 @@ export class SoloistClient {
             )
                 throw new Error('Soloist endpoint must use IPv4 loopback.');
             uri = `ws://127.0.0.1:${port}`;
-        } catch (_error) {
+        } catch {
             return;
         }
         this._connecting = true;
@@ -85,7 +82,7 @@ export class SoloistClient {
                 let socket;
                 try {
                     socket = session.websocket_connect_finish(result);
-                } catch (_error) {
+                } catch {
                     return;
                 }
                 if (this._cancel.is_cancelled()) {
@@ -117,7 +114,7 @@ export class SoloistClient {
                                 event.type === 'error'
                                     ? 'Soloist could not perform that command. Check pairing and device state.'
                                     : '';
-                        } catch (_error) {
+                        } catch {
                             this.state.error =
                                 'Soloist sent an invalid playback update.';
                         }
@@ -136,11 +133,7 @@ export class SoloistClient {
     }
 
     command(command, uri = null) {
-        if (
-            !['play', 'pause', 'skip_next', 'skip_prev', 'activate'].includes(
-                command,
-            )
-        )
+        if (!['play', 'pause', 'skip_next', 'skip_prev', 'activate'].includes(command))
             return Promise.reject(new Error('Invalid playback command.'));
         let message;
         try {
@@ -169,7 +162,7 @@ export class SoloistClient {
                 throw new Error(
                     'Spotify did not activate this device. Select it in Spotify and try again.',
                 );
-            await new Promise((resolve) =>
+            await new Promise(resolve =>
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
                     resolve();
                     return GLib.SOURCE_REMOVE;
@@ -200,7 +193,7 @@ export class SoloistClient {
     }
 
     _enqueue(callback) {
-        const result = this._commands.then(callback);
+        const result = (this._commands ?? Promise.resolve()).then(callback);
         this._commands = result.catch(() => {});
         return result;
     }
@@ -211,22 +204,16 @@ export class SoloistClient {
                 'Start Soloist and pair it from Spotify’s device menu first.',
             );
         return new Promise((resolve, reject) => {
-            const timer = GLib.timeout_add_seconds(
-                GLib.PRIORITY_DEFAULT,
-                5,
-                () => {
-                    this._pending.timer = 0;
-                    this._settleCommand(
-                        new Error(
-                            'Soloist did not acknowledge the command. Try again.',
-                        ),
-                    );
-                    // Without request IDs, a late acknowledgement could otherwise
-                    // complete the next command of the same type.
-                    this._disconnect();
-                    return GLib.SOURCE_REMOVE;
-                },
-            );
+            const timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
+                this._pending.timer = 0;
+                this._settleCommand(
+                    new Error('Soloist did not acknowledge the command. Try again.'),
+                );
+                // Without request IDs, a late acknowledgement could otherwise
+                // complete the next command of the same type.
+                this._disconnect();
+                return GLib.SOURCE_REMOVE;
+            });
             this._pending = {
                 command: message.command,
                 resolve,
@@ -235,10 +222,8 @@ export class SoloistClient {
             };
             try {
                 this._socket.send_text(JSON.stringify(message));
-            } catch (_error) {
-                this._settleCommand(
-                    new Error('Soloist connection interrupted.'),
-                );
+            } catch {
+                this._settleCommand(new Error('Soloist connection interrupted.'));
             }
         });
     }

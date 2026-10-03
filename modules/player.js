@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {
-    paths,
-    run,
-    service,
-    serviceStatus,
-    writeService,
-} from './platform.js';
+import { paths, run, service, serviceStatus, writeService } from './platform.js';
 import { lookupSecret } from './secrets.js';
 import { SoloistClient } from './soloist.js';
 import { playerPresentation, soloistKey } from './model.js';
@@ -77,12 +71,12 @@ export class PlayerController {
             if (key) {
                 try {
                     this.state.keySaved = Boolean(soloistKey(key));
-                } catch (_error) {
+                } catch {
                     this._credentialError =
                         'The saved API key is invalid. Save a valid Soloist key.';
                 }
             }
-        } catch (_error) {
+        } catch {
             if (!this._cancel.is_cancelled()) {
                 this.state.keySaved = false;
                 this._credentialError =
@@ -98,7 +92,7 @@ export class PlayerController {
 
     async refresh() {
         if (this._cancel.is_cancelled()) return;
-        if (this._refresh) return this._refresh;
+        if (this._refresh !== null) return this._refresh;
         this._refresh = this._readState();
         try {
             await this._refresh;
@@ -123,12 +117,7 @@ export class PlayerController {
                     info.get_attribute_boolean('access::can-execute');
                 stamp = `${info.get_attribute_uint64('time::modified')}:${info.get_size()}`;
             } catch (error) {
-                if (
-                    !error.matches(
-                        Gio.io_error_quark(),
-                        Gio.IOErrorEnum.NOT_FOUND,
-                    )
-                )
+                if (!error.matches(Gio.io_error_quark(), Gio.IOErrorEnum.NOT_FOUND))
                     throw error;
             }
             let version = this.state.version;
@@ -155,7 +144,7 @@ export class PlayerController {
                 error: this._credentialError,
                 checking: false,
             };
-        } catch (_error) {
+        } catch {
             if (this._cancel.is_cancelled()) return;
             this.state.error =
                 'Could not check the player. Check the session service manager and player installation.';
@@ -192,7 +181,7 @@ export class PlayerController {
             if (resume) {
                 try {
                     await this._control('start', null);
-                } catch (_error) {
+                } catch {
                     failure = new Error(
                         'The update failed to restore the running player. Start it again from settings.',
                     );

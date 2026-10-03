@@ -19,9 +19,7 @@ async function main() {
         const key = soloistKey(await lookupSecret('soloist-key'));
         const source = Gio.SettingsSchemaSource.new_from_directory(
             GLib.build_filenamev([
-                GLib.path_get_dirname(
-                    GLib.filename_from_uri(import.meta.url)[0],
-                ),
+                GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]),
                 '..',
                 'schemas',
             ]),
@@ -56,8 +54,7 @@ async function main() {
                 '--ws',
                 '127.0.0.1:0',
             ],
-            Gio.SubprocessFlags.STDOUT_SILENCE |
-                Gio.SubprocessFlags.STDERR_SILENCE,
+            Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
         );
         client = new SoloistClient(() => bridge?.sync());
         bridge = new MprisBridge(client);
@@ -76,10 +73,8 @@ async function main() {
         if (exitCode === 10)
             printerr('Soloist build expired. Update it in QuickSpot settings.');
         else if (exitCode !== 0)
-            printerr(
-                'Soloist exited. Check the API key, pairing, and audio output.',
-            );
-    } catch (_error) {
+            printerr('Soloist exited. Check the API key, pairing, and audio output.');
+    } catch {
         printerr(
             'Soloist setup is incomplete. Install Soloist and save its API key in QuickSpot settings.',
         );

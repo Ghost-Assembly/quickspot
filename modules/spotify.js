@@ -3,12 +3,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup?version=3.0';
 import { lookupSecret, storeSecret } from './secrets.js';
-import {
-    likedSongsUri,
-    playlistPage,
-    savedToken,
-    tokenRecord,
-} from './model.js';
+import { likedSongsUri, playlistPage, savedToken, tokenRecord } from './model.js';
 
 export const REDIRECT_URI = 'http://127.0.0.1:43821/callback';
 
@@ -27,9 +22,7 @@ export function pkce(verifier) {
         verifier,
         -1,
     );
-    const bytes = Uint8Array.from(hex.match(/../g), (pair) =>
-        Number.parseInt(pair, 16),
-    );
+    const bytes = Uint8Array.from(hex.match(/../g), pair => Number.parseInt(pair, 16));
     return GLib.base64_encode(bytes)
         .replaceAll('+', '-')
         .replaceAll('/', '_')
@@ -42,9 +35,7 @@ function randomString() {
         const bytes = stream.read_bytes(32, null).get_data();
         if (bytes.length !== 32)
             throw new Error('Could not generate login randomness.');
-        return Array.from(bytes, (value) =>
-            value.toString(16).padStart(2, '0'),
-        ).join('');
+        return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
     } finally {
         stream.close(null);
     }
@@ -60,13 +51,7 @@ export class SpotifyClient {
         this.retryAt = 0;
     }
 
-    async request(
-        method,
-        uri,
-        body = null,
-        access = null,
-        cancel = this._cancel,
-    ) {
+    async request(method, uri, body = null, access = null, cancel = this._cancel) {
         const library =
             method === 'GET' &&
             typeof uri === 'string' &&
@@ -88,8 +73,7 @@ export class SpotifyClient {
             throw new Error('Spotify is busy. Try refreshing later.');
         const message = Soup.Message.new(method, uri);
         message.set_flags(Soup.MessageFlags.NO_REDIRECT);
-        if (access)
-            message.request_headers.append('Authorization', `Bearer ${access}`);
+        if (access) message.request_headers.append('Authorization', `Bearer ${access}`);
         if (body)
             message.set_request_body_from_bytes(
                 'application/x-www-form-urlencoded',
@@ -103,7 +87,7 @@ export class SpotifyClient {
                 (session, result) => {
                     try {
                         resolve(session.send_finish(result));
-                    } catch (_error) {
+                    } catch {
                         reject(
                             new Error(
                                 'Could not reach Spotify. Check your connection.',
@@ -124,15 +108,9 @@ export class SpotifyClient {
                         cancel,
                         (source, result) => {
                             try {
-                                resolve(
-                                    source.read_bytes_finish(result).get_data(),
-                                );
-                            } catch (_error) {
-                                reject(
-                                    new Error(
-                                        'Could not read Spotify response.',
-                                    ),
-                                );
+                                resolve(source.read_bytes_finish(result).get_data());
+                            } catch {
+                                reject(new Error('Could not read Spotify response.'));
                             }
                         },
                     );
@@ -149,7 +127,7 @@ export class SpotifyClient {
         const status = message.status_code;
         if (status === 429) {
             const retry = message.response_headers.get_one('Retry-After');
-            const seconds = retry ? Number(retry) : NaN;
+            const seconds = retry ? Number(retry) : Number.NaN;
             this.retryAt =
                 Date.now() +
                 (Number.isFinite(seconds) ? Math.max(1, seconds) : 60) * 1000;
@@ -171,23 +149,23 @@ export class SpotifyClient {
         }
         try {
             return JSON.parse(new TextDecoder().decode(bytes));
-        } catch (_error) {
+        } catch {
             throw new Error('Spotify returned an invalid response.');
         }
     }
 
     async accessToken() {
-        if (this._refresh) return this._refresh;
+        if (this._refresh !== null) return this._refresh;
         const raw = await this._lookup('tokens', this._cancel);
         if (!raw) throw new Error('Connect Spotify in QuickSpot settings.');
         let token;
         try {
             token = savedToken(JSON.parse(raw));
-        } catch (_error) {
+        } catch {
             throw new Error('Reconnect Spotify in QuickSpot settings.');
         }
         if (token.expires > Date.now() + 60000) return token.access;
-        if (this._refresh) return this._refresh;
+        if (this._refresh !== null) return this._refresh;
         this._refresh = this._refreshToken(token);
         try {
             return await this._refresh;
@@ -224,9 +202,7 @@ export class SpotifyClient {
             if (visited.has(next) || visited.size >= 200)
                 throw new Error('Spotify returned too many playlist pages.');
             visited.add(next);
-            const page = playlistPage(
-                await this.request('GET', next, null, access),
-            );
+            const page = playlistPage(await this.request('GET', next, null, access));
             for (const item of page.items) items.set(item.uri, item);
             next = page.next;
         }
@@ -236,12 +212,7 @@ export class SpotifyClient {
     async likedSongs() {
         const access = await this.accessToken();
         return likedSongsUri(
-            await this.request(
-                'GET',
-                'https://api.spotify.com/v1/me',
-                null,
-                access,
-            ),
+            await this.request('GET', 'https://api.spotify.com/v1/me', null, access),
         );
     }
 
@@ -257,7 +228,7 @@ export class SpotifyLogin {
     constructor(
         client,
         {
-            launch = (uri) => Gio.AppInfo.launch_default_for_uri(uri, null),
+            launch = uri => Gio.AppInfo.launch_default_for_uri(uri, null),
             save = storeSecret,
         } = {},
     ) {
@@ -268,8 +239,7 @@ export class SpotifyLogin {
     }
 
     async connect(clientId) {
-        if (this._attempt)
-            throw new Error('Spotify login is already in progress.');
+        if (this._attempt) throw new Error('Spotify login is already in progress.');
         if (!/^[a-fA-F0-9]{32}$/.test(clientId))
             throw new Error('Enter a valid Spotify client ID.');
         const verifier = randomString();
@@ -287,53 +257,50 @@ export class SpotifyLogin {
         const codePromise = new Promise((resolve, reject) => {
             attempt.reject = reject;
             let used = false;
-            server.add_handler(
-                '/callback',
-                (_server, message, _path, query) => {
-                    if (
-                        used ||
-                        message.get_method() !== 'GET' ||
-                        _path !== '/callback' ||
-                        query?.state !== state
-                    ) {
-                        message.set_status(400, null);
-                        message.set_response(
-                            'text/plain',
-                            Soup.MemoryUse.COPY,
-                            new TextEncoder().encode('Invalid login callback.'),
-                        );
-                        return;
-                    }
-                    if (
-                        query.error ||
-                        typeof query.code !== 'string' ||
-                        !query.code ||
-                        query.code.length > 2048
-                    ) {
-                        message.set_status(400, null);
-                        message.set_response(
-                            'text/plain',
-                            Soup.MemoryUse.COPY,
-                            new TextEncoder().encode(
-                                'Login canceled. Return to QuickSpot.',
-                            ),
-                        );
-                        used = true;
-                        reject(new Error('Spotify login was canceled.'));
-                        return;
-                    }
-                    used = true;
-                    message.set_status(200, null);
+            server.add_handler('/callback', (_server, message, _path, query) => {
+                if (
+                    used ||
+                    message.get_method() !== 'GET' ||
+                    _path !== '/callback' ||
+                    query?.state !== state
+                ) {
+                    message.set_status(400, null);
+                    message.set_response(
+                        'text/plain',
+                        Soup.MemoryUse.COPY,
+                        new TextEncoder().encode('Invalid login callback.'),
+                    );
+                    return;
+                }
+                if (
+                    query.error ||
+                    typeof query.code !== 'string' ||
+                    !query.code ||
+                    query.code.length > 2048
+                ) {
+                    message.set_status(400, null);
                     message.set_response(
                         'text/plain',
                         Soup.MemoryUse.COPY,
                         new TextEncoder().encode(
-                            'Return to QuickSpot to finish connecting. You can close this tab.',
+                            'Login canceled. Return to QuickSpot.',
                         ),
                     );
-                    resolve(query.code);
-                },
-            );
+                    used = true;
+                    reject(new Error('Spotify login was canceled.'));
+                    return;
+                }
+                used = true;
+                message.set_status(200, null);
+                message.set_response(
+                    'text/plain',
+                    Soup.MemoryUse.COPY,
+                    new TextEncoder().encode(
+                        'Return to QuickSpot to finish connecting. You can close this tab.',
+                    ),
+                );
+                resolve(query.code);
+            });
             attempt.timeout = GLib.timeout_add_seconds(
                 GLib.PRIORITY_DEFAULT,
                 180,
@@ -341,9 +308,7 @@ export class SpotifyLogin {
                     attempt.timeout = 0;
                     this._cancelAttempt(
                         attempt,
-                        new Error(
-                            'Spotify login timed out. Try connecting again.',
-                        ),
+                        new Error('Spotify login timed out. Try connecting again.'),
                     );
                     return GLib.SOURCE_REMOVE;
                 },
@@ -364,7 +329,7 @@ export class SpotifyLogin {
                         code_challenge: pkce(verifier),
                     }),
             );
-        } catch (_error) {
+        } catch {
             this.cancel();
         }
         return result;
@@ -423,9 +388,6 @@ export class SpotifyLogin {
 
     cancel() {
         if (this._attempt)
-            this._cancelAttempt(
-                this._attempt,
-                new Error('Spotify login canceled.'),
-            );
+            this._cancelAttempt(this._attempt, new Error('Spotify login canceled.'));
     }
 }

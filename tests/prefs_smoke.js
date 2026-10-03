@@ -5,20 +5,21 @@ import Gtk from 'gi://Gtk?version=4.0';
 import System from 'system';
 import { playerPresentation } from '../modules/model.js';
 
+const fixture = GLib.getenv('QUICKSPOT_TEST_EXTENSION');
+if (!fixture) throw new Error('An isolated extension fixture is required.');
+
 Gio.resources_register(
     Gio.Resource.load(
         '/usr/share/gnome-shell/org.gnome.Shell.Extensions.src.gresource',
     ),
 );
 const { default: Preferences } = await import(
-    GLib.filename_to_uri(`${ARGV[0]}/prefs.js`, null)
+    GLib.filename_to_uri(`${fixture}/prefs.js`, null)
 );
-const [, bytes] = Gio.File.new_for_path(
-    `${ARGV[0]}/metadata.json`,
-).load_contents(null);
+const [, bytes] = Gio.File.new_for_path(`${fixture}/metadata.json`).load_contents(null);
 const metadata = JSON.parse(new TextDecoder().decode(bytes));
-metadata.dir = Gio.File.new_for_path(ARGV[0]);
-metadata.path = ARGV[0];
+metadata.dir = Gio.File.new_for_path(fixture);
+metadata.path = fixture;
 Adw.init();
 
 function check(condition, message) {
@@ -27,19 +28,14 @@ function check(condition, message) {
 
 function widgets(root) {
     const result = [root];
-    for (
-        let child = root.get_first_child();
-        child;
-        child = child.get_next_sibling()
-    )
+    for (let child = root.get_first_child(); child; child = child.get_next_sibling())
         result.push(...widgets(child));
     return result;
 }
 
 function row(root, title) {
     const result = widgets(root).find(
-        (widget) =>
-            widget instanceof Adw.PreferencesRow && widget.title === title,
+        widget => widget instanceof Adw.PreferencesRow && widget.title === title,
     );
     check(Boolean(result), `Missing settings row: ${title}`);
     return result;
@@ -47,7 +43,7 @@ function row(root, title) {
 
 function button(root, label) {
     const result = widgets(root).find(
-        (widget) => widget instanceof Gtk.Button && widget.label === label,
+        widget => widget instanceof Gtk.Button && widget.label === label,
     );
     check(Boolean(result), `Missing settings button: ${label}`);
     return result;
@@ -56,7 +52,7 @@ function button(root, label) {
 async function settled(predicate) {
     for (let count = 0; count < 100; count++) {
         if (predicate()) return;
-        await new Promise((resolve) =>
+        await new Promise(resolve =>
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 10, () => {
                 resolve();
                 return GLib.SOURCE_REMOVE;
@@ -99,7 +95,7 @@ class TestPreferences extends Preferences {
                 controller.state.version = 'test';
                 onChange();
             },
-            control: async (action) => {
+            control: async action => {
                 if (controller.fail) throw new Error('Test service failure');
                 if (action === 'start' || action === 'stop') {
                     controller.state.activeState =
@@ -128,10 +124,7 @@ async function testDynamicSettings() {
         const name = row(testWindow, 'Playlist name');
         const playlist = row(testWindow, 'Playlist ID, link, or URI');
         const saved = () =>
-            testPrefs
-                .getSettings()
-                .get_value('playlist-shortcuts')
-                .deep_unpack();
+            testPrefs.getSettings().get_value('playlist-shortcuts').deep_unpack();
         name.text = 'Discover Weekly';
         playlist.text = '37i9dQZF1DXcBWIGoYBM5M';
         button(playlist, 'Add').emit('clicked');
@@ -139,9 +132,7 @@ async function testDynamicSettings() {
             !name.sensitive && !playlist.sensitive,
             'Pending operation allowed editing the inputs it will clear.',
         );
-        await settled(
-            () => name.text === '' && button(playlist, 'Add').sensitive,
-        );
+        await settled(() => name.text === '' && button(playlist, 'Add').sensitive);
         check(
             name.sensitive && playlist.sensitive,
             'Finished operation left playlist inputs disabled.',
@@ -155,9 +146,7 @@ async function testDynamicSettings() {
         name.text = 'Weekly mix';
         playlist.text = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M';
         button(playlist, 'Add').emit('clicked');
-        await settled(
-            () => name.text === '' && button(playlist, 'Add').sensitive,
-        );
+        await settled(() => name.text === '' && button(playlist, 'Add').sensitive);
         check(
             saved().length === 1 && row(testWindow, 'Weekly mix'),
             'Renaming added a duplicate shortcut.',
@@ -166,9 +155,7 @@ async function testDynamicSettings() {
         playlist.text =
             'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5N?si=example';
         button(playlist, 'Add').emit('clicked');
-        await settled(
-            () => name.text === '' && button(playlist, 'Add').sensitive,
-        );
+        await settled(() => name.text === '' && button(playlist, 'Add').sensitive);
         check(
             saved().length === 2 && row(testWindow, 'Second playlist'),
             'Multiple shortcuts were not saved.',
@@ -179,19 +166,13 @@ async function testDynamicSettings() {
         await settled(() => button(playlist, 'Add').sensitive);
         check(
             saved().length === 2 &&
-                row(testWindow, 'QuickSpot').subtitle.includes(
-                    'Spotify playlist ID',
-                ),
+                row(testWindow, 'QuickSpot').subtitle.includes('Spotify playlist ID'),
             'Invalid playlist input was saved or failed without feedback.',
         );
         button(row(testWindow, 'Weekly mix'), 'Remove').emit('clicked');
-        await settled(
-            () => saved().length === 1 && button(playlist, 'Add').sensitive,
-        );
+        await settled(() => saved().length === 1 && button(playlist, 'Add').sensitive);
         button(row(testWindow, 'Second playlist'), 'Remove').emit('clicked');
-        await settled(
-            () => saved().length === 0 && button(playlist, 'Add').sensitive,
-        );
+        await settled(() => saved().length === 0 && button(playlist, 'Add').sensitive);
         print(
             'PASS: manual playlist IDs, links, rename, multiple shortcuts, validation, and removal without library login',
         );
@@ -227,9 +208,7 @@ async function testDynamicSettings() {
         );
         const automatic = row(testWindow, 'Start at login');
         automatic.active = true;
-        await settled(
-            () => testPrefs.player.state.autostart && automatic.sensitive,
-        );
+        await settled(() => testPrefs.player.state.autostart && automatic.sensitive);
         runtime.activatable_widget.emit('clicked');
         await settled(
             () =>

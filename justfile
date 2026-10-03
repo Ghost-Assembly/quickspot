@@ -1,112 +1,135 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-
-# Match the Quick apps: derive the extension identity from its metadata.
 _uuid := replace_regex(read("metadata.json"), '(?s)^.*?"uuid"\s*:\s*"([^"]+)".*$', '$1')
-uuid := if _uuid =~ '^[A-Za-z0-9._@-]+$' { _uuid } else { error("no uuid in metadata.json") }
+uuid := if _uuid =~ '^[A-Za-z0-9._@-]+$' { _uuid } else { error("invalid extension UUID") }
+_name := replace_regex(read("package.json"), '(?s)^.*?"name"\s*:\s*"([^"]+)".*$', '$1')
+project_name := if _name =~ '^quick[a-z]+$' { _name } else { error("invalid project name") }
 
 # List project commands
 default:
     @just --list
 
-# Install development tools and dependencies
+# Install the exact toolchain, dependencies, and browser engines
 setup:
     mise install
     npm ci --ignore-scripts
-    npx playwright install chromium firefox
-    @for tool in gjs glib-compile-schemas gnome-shell gnome-extensions systemctl; do command -v "$tool" >/dev/null || { echo "missing host tool: $tool" >&2; exit 1; }; done
-    /usr/bin/gjs -c 'imports.gi.Soup; imports.gi.Secret; imports.gi.Adw;'
-    @echo 'ready'
+    ./node_modules/.bin/playwright install chromium firefox
+    @for tool in gjs glib-compile-schemas gnome-extensions jq; do command -v "$tool" >/dev/null || { echo "missing host tool: $tool; use a development container if needed" >&2; exit 1; }; done
 
-# Format source and configuration
+# Format source and generated documentation
 fmt:
-    npx prettier --write .
+    ./node_modules/.bin/prettier --write .
+    ./node_modules/.bin/eslint --fix .
     ruff format scripts tests
     ruff check --fix scripts tests
+    python3 scripts/docs.py
 
-# Check source, formatting, and settings schemas
-lint:
-    npx eslint --max-warnings=0 .
-    npx prettier --check .
-    ruff check scripts tests
+# Verify canonical files, documentation, source, and schemas
+lint: template-check docs-check
+    ./node_modules/.bin/eslint --max-warnings=0 --no-inline-config .
+    ./node_modules/.bin/prettier --check .
+    ruff check --ignore-noqa scripts tests
     ruff format --check scripts tests
     /usr/bin/glib-compile-schemas --strict --dry-run schemas
+    @if compgen -G 'scripts/*.sh' >/dev/null; then shellcheck scripts/*.sh; fi
 
-# Run offline boundary and installer tests
-test:
-    node --test tests/*.test.js
+# Verify against the immutable canonical template
+template-check:
+    python3 scripts/template.py check
+
+# Adopt a reviewed canonical revision
+template-sync $revision:
+    python3 scripts/template.py sync "$revision"
+
+# Report newer approved template revisions
+template-status:
+    python3 scripts/template.py status
+
+# Regenerate shared instructions and README badges
+docs-generate:
+    python3 scripts/docs.py
+
+# Fail on stale generated documentation
+docs-check:
+    python3 scripts/docs.py --check
+
+# Run offline behavior tests and shared tooling regressions
+test *args:
+    ./node_modules/.bin/vitest run {{args}}
     python3 -m unittest discover -s tests -p 'test_*.py' -v
-    python3 scripts/run_native.py
+    just test-extra
 
-# Check the documentation site in Chromium and Firefox
+# Measure all JavaScript runtime source and Python tooling
+coverage:
+    ./node_modules/.bin/vitest run --coverage
+    coverage run -m unittest discover -s tests -p 'test_*.py' -v
+    coverage xml -o coverage/python.xml
+
+# Test static documentation in Chromium and Firefox
 test-docs *args:
-    npx playwright test {{ args }}
+    ./node_modules/.bin/playwright test {{args}}
 
-# Serve the static documentation site locally
-docs:
-    python3 -m http.server 8000 --bind 127.0.0.1 --directory docs
-
-# Scan working files and Git history for accidentally included secrets
+# Check dependencies, working files, Git history, and workflow security
 security:
-    gitleaks dir --redact --no-banner --config .gitleaks.toml .
+    osv-scanner scan source --lockfile=package-lock.json
+    python3 scripts/security_source.py
     gitleaks git --redact --no-banner .
+    python3 scripts/workflow_lint.py
+    zizmor --offline --persona auditor --no-ignores .github/workflows/
 
-# Build the extension ZIP without credentials or Spotify binaries
+# Build an explicit runtime-only ZIP
 build:
     python3 scripts/build.py
 
-# Compare the bundle with GNOME's official extension packer
+# Compare every runtime file with GNOME's official packer
 pack-check: build
     python3 scripts/build.py --check
+    @for icon in icons/*.svg; do [[ ! -f "$icon" ]] || /usr/bin/gjs -m scripts/icon-check.js "$icon"; done
 
-# Run GNOME Shell in a separate development window
+# Perform isolated lifecycle and project integration checks
+test-live: pack-check
+    just live-check
+    just live-extra
+
+# Run GNOME in a development window
 run:
     /usr/bin/dbus-run-session -- /usr/bin/gnome-shell --devkit --wayland
 
-# Open preferences for an installed extension
-prefs:
-    /usr/bin/gnome-extensions prefs {{ uuid }}
+# Install the same ZIP used for releases
+install: build
+    /usr/bin/gnome-extensions install --force '{{uuid}}.shell-extension.zip'
 
 # Enable the installed extension
 enable:
-    /usr/bin/gnome-extensions enable {{ uuid }}
+    /usr/bin/gnome-extensions enable '{{uuid}}'
 
 # Disable the installed extension
 disable:
-    /usr/bin/gnome-extensions disable {{ uuid }}
+    /usr/bin/gnome-extensions disable '{{uuid}}'
 
-# Follow extension log output
-logs:
-    journalctl --user -f -o cat | rg --line-buffered -i quickspot
-
-# Follow the player's credential-safe launcher log
-logs-player:
-    journalctl --user -f -u quickspot-soloist.service -o cat
-
-# Check installation, running state, and pairing without printing credentials
-doctor:
-    /usr/bin/gjs -m scripts/doctor.js
-
-# Remove only generated artifacts
-clean:
-    python3 -c 'from pathlib import Path; files = list(Path(".").glob("*.shell-extension.zip")) + list(Path("dist").glob("*.shell-extension.zip")) + [Path("schemas/gschemas.compiled")]; [p.unlink(missing_ok=True) for p in files]'
-
-# Run reproducible checks and build
-ci: lint test test-docs security build
-
-# Exercise GNOME enable, disable, re-enable, and preferences in an isolated session
-test-live: pack-check
-    python3 scripts/check_live.py
-
-# Save this repository's local credentials in GNOME Keyring
-import-credentials:
-    /usr/bin/gjs -m scripts/import-credentials.js .env
-
-# Install the built extension for the current user
-install: build
-    /usr/bin/gnome-extensions install --force {{ uuid }}.shell-extension.zip
-
-# Stop and disable Soloist, then remove the extension (keep saved data)
+# Remove the extension while preserving user data
 uninstall:
-    if /usr/bin/systemctl --user cat quickspot-soloist.service >/dev/null 2>&1; then /usr/bin/systemctl --user disable --now quickspot-soloist.service; fi
-    /usr/bin/gnome-extensions disable {{ uuid }}
-    /usr/bin/gnome-extensions uninstall {{ uuid }}
+    just uninstall-extra
+    /usr/bin/gnome-extensions disable '{{uuid}}'
+    /usr/bin/gnome-extensions uninstall '{{uuid}}'
+
+# Open preferences
+prefs:
+    /usr/bin/gnome-extensions prefs '{{uuid}}'
+
+# Follow GNOME Shell logs
+logs:
+    journalctl --user -f -o cat /usr/bin/gnome-shell --grep '\[{{project_name}}\]'
+
+# Serve the static documentation site
+docs:
+    python3 -m http.server 8000 --bind 127.0.0.1 --directory docs
+
+# Remove generated output only
+[confirm("Remove generated test and build output?")]
+clean:
+    python3 scripts/clean.py
+
+# Run all local checks; GitHub additionally requires CodeQL and Sonar
+ci: lint test coverage test-docs security pack-check
+
+import 'project.just'

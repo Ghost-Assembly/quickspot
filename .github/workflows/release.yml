@@ -1,0 +1,75 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # Inspect workflow runs and download their tested artifacts.
+    outputs:
+      run: ${{ steps.verify.outputs.run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.1
+          cache: false
+      - name: Verify tag and tested commit
+        id: verify
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          version="${TAG#v}"
+          test "$version" = "$(jq -r '."version-name"' metadata.json)"
+          test "$version" = "$(jq -r .version package.json)"
+          git merge-base --is-ancestor HEAD origin/main
+          revision="$(git rev-parse HEAD)"
+          run="$(gh run list --repo "$REPOSITORY" --workflow ci.yml --branch main --event push --commit "$revision" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          test -n "$run" && test "$run" != null
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+  publish:
+    name: publish
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # Create the release and attach its tested ZIP.
+      actions: read # Inspect workflow runs and download their tested artifacts.
+    steps:
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.1
+          cache: false
+          mise_toml: |
+            [tools]
+            gh = "2.99.0"
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: extension-bundle
+          run-id: ${{ needs.verify.outputs.run }}
+          github-token: ${{ github.token }}
+          path: bundle
+      - name: Publish the tested artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          shopt -s nullglob
+          files=(bundle/*.shell-extension.zip)
+          test "${#files[@]}" -eq 1
+          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes "${files[0]}"

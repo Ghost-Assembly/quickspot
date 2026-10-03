@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Pure boundary validation shared by GJS and the Node tests.
 export function likedSongsUri(profile) {
-    if (
-        typeof profile?.id !== 'string' ||
-        !/^[A-Za-z0-9._-]{1,128}$/.test(profile.id)
-    )
+    if (typeof profile?.id !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(profile.id))
         throw new Error('Spotify returned an invalid account identifier.');
     return `spotify:user:${profile.id}:collection`;
 }
@@ -25,7 +22,7 @@ export function soloistKey(input) {
         input.length > 8192 ||
         /\s/u.test(input) ||
         Array.from(input).some(
-            (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+            char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
         )
     )
         throw new Error('Enter a valid Soloist API key.');
@@ -38,7 +35,7 @@ export function deviceName(input) {
         !value ||
         value.length > 100 ||
         Array.from(value).some(
-            (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+            char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
         )
     )
         throw new Error('Enter a device name between 1 and 100 characters.');
@@ -46,18 +43,14 @@ export function deviceName(input) {
 }
 
 export function playerPresentation(setup, playback) {
-    const running = [
-        'active',
-        'activating',
-        'deactivating',
-        'reloading',
-    ].includes(setup.activeState);
+    const running = ['active', 'activating', 'deactivating', 'reloading'].includes(
+        setup.activeState,
+    );
     let title;
     let detail;
     if (!setup.installed) {
         title = 'Player not installed';
-        detail =
-            'Install the player below to use this computer as a Spotify speaker.';
+        detail = 'Install the player below to use this computer as a Spotify speaker.';
     } else if (!setup.serviceLoaded) {
         title = 'Player needs setup';
         detail = 'Choose Repair to restore the player service.';
@@ -118,14 +111,13 @@ export function playlistUri(input) {
     const typeIndex = localized ? 4 : 3;
     // Indices come from the fixed Spotify URL shape, never from input keys.
 
-    const candidate = parts[typeIndex + 1];
+    const candidate = parts.at(typeIndex + 1);
     const link =
         parts[0] === 'https:' &&
         parts[1] === '' &&
         parts[2] === 'open.spotify.com' &&
         parts.length === typeIndex + 2 &&
-        // eslint-disable-next-line security/detect-object-injection
-        parts[typeIndex] === 'playlist' &&
+        parts.at(typeIndex) === 'playlist' &&
         /^[A-Za-z0-9]{22}$/.test(candidate ?? '') &&
         !/[\s#]/u.test(value);
     const id = /^[A-Za-z0-9]{22}$/.test(value)
@@ -139,8 +131,8 @@ export function playlistPage(value) {
     if (!value || !Array.isArray(value.items) || value.items.length > 50)
         throw new Error('Spotify returned an invalid playlist page.');
     const items = value.items
-        .filter((item) => item !== null)
-        .map((item) => {
+        .filter(item => item !== null)
+        .map(item => {
             if (typeof item.name !== 'string' || item.name.length > 500)
                 throw new Error('Spotify returned an invalid playlist name.');
             return { name: item.name, uri: playlistUri(item.uri) };
@@ -149,9 +141,7 @@ export function playlistPage(value) {
         throw new Error('Spotify returned an invalid page link.');
     if (
         value.next &&
-        !/^https:\/\/api\.spotify\.com\/v1\/me\/playlists\?[^#\s]+$/.test(
-            value.next,
-        )
+        !/^https:\/\/api\.spotify\.com\/v1\/me\/playlists\?[^#\s]+$/.test(value.next)
     )
         throw new Error('Spotify returned an unexpected page link.');
     return { items, next: value.next };
@@ -176,7 +166,7 @@ export function playlistShortcuts(rows) {
             if (!Array.isArray(row) || row.length !== 2) continue;
             const playlist = playlistShortcut(row[0], row[1]);
             playlists.set(playlist.uri, playlist);
-        } catch (_error) {
+        } catch {
             // Ignore malformed saved rows without breaking the Shell menu.
         }
     }
@@ -275,7 +265,7 @@ export function playbackEvent(state, event) {
         next.artist = Array.isArray(creators)
             ? creators
                   .slice(0, 20)
-                  .map((creator) => entityName(creator?.entity))
+                  .map(creator => entityName(creator?.entity))
                   .filter(Boolean)
                   .join(', ')
             : '';
@@ -283,11 +273,7 @@ export function playbackEvent(state, event) {
     if (['playback_state', 'device_changed'].includes(event.type))
         next.active = event.is_active === true;
     if (['playback_state', 'volume_changed'].includes(event.type)) {
-        if (
-            !Number.isFinite(event.volume) ||
-            event.volume < 0 ||
-            event.volume > 100
-        )
+        if (!Number.isFinite(event.volume) || event.volume < 0 || event.volume > 100)
             throw new Error('Invalid volume.');
         next.volume = event.volume;
     }
@@ -305,8 +291,7 @@ export function playbackEvent(state, event) {
     if (['playback_state', 'context_changed'].includes(event.type)) {
         const uri = event.context?.uri;
         next.context =
-            typeof uri === 'string' &&
-            /^spotify:[A-Za-z0-9:._%-]{1,512}$/.test(uri)
+            typeof uri === 'string' && /^spotify:[A-Za-z0-9:._%-]{1,512}$/.test(uri)
                 ? uri
                 : '';
     }
@@ -327,19 +312,19 @@ export function parseEnvironment(text) {
     if (text.length > 65536) throw new Error('Credential file is too large.');
     const values = new Map();
     for (const line of text.split('\n')) {
-        // eslint-disable-next-line security/detect-unsafe-regex -- credential file is bounded to 64 KiB
-        const match = /^(?:export\s+)?([A-Z_][A-Z_0-9]*)\s*=\s*(.*?)\s*$/.exec(
-            line.trim(),
-        );
-        if (!match) continue;
-        let value = match[2];
+        const entry = line.trim().replace(/^export\s+/u, '');
+        const separator = entry.indexOf('=');
+        if (separator < 0) continue;
+        const key = entry.slice(0, separator).trim();
+        if (!/^[A-Z_][A-Z_0-9]*$/u.test(key)) continue;
+        let value = entry.slice(separator + 1).trim();
         if (
             (value.startsWith('"') && value.endsWith('"')) ||
             (value.startsWith("'") && value.endsWith("'"))
         )
             value = value.slice(1, -1);
         // Values are literal: never execute, interpolate, or source this file.
-        values.set(match[1], value);
+        values.set(key, value);
     }
     return values;
 }

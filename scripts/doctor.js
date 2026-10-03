@@ -16,7 +16,7 @@ async function diagnose() {
         await player.refresh();
         await player.refreshCredentials();
         if (expired) return;
-        await new Promise((resolve) => {
+        await new Promise(resolve => {
             timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 4, () => {
                 timer = 0;
                 resolve();
@@ -36,13 +36,11 @@ async function diagnose() {
         print(
             `Local API: ${player.soloist.state.connected ? 'connected' : 'unavailable'}`,
         );
-        print(
-            `Speaker paired: ${player.soloist.state.loggedIn ? 'yes' : 'no'}`,
-        );
+        print(`Speaker paired: ${player.soloist.state.loggedIn ? 'yes' : 'no'}`);
         print(player.presentation.title);
         print(player.presentation.detail);
         exitCode = player.soloist.state.connected ? 0 : 1;
-    } catch (_error) {
+    } catch {
         printerr('Could not finish the player diagnostic.');
     } finally {
         player.destroy();

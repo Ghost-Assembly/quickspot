@@ -45,6 +45,8 @@ class SpotifyRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 def install_archive(archive: Path, destination: Path) -> None:
     """Validate the archive and stage regular files before replacing the binary."""
+    if not destination.is_absolute() or ".." in destination.parts or destination.is_symlink():
+        raise ValueError("Installation requires an absolute, non-symlink destination.")
     destination.mkdir(parents=True, exist_ok=True, mode=0o700)
     with tempfile.TemporaryDirectory(dir=destination, prefix=".install-") as work:
         staging = Path(work)
@@ -69,8 +71,12 @@ def install_archive(archive: Path, destination: Path) -> None:
         binary = staging / "soloist"
         binary.chmod(0o700)
         # Only the allowlisted binary from Spotify's official HTTPS archive runs.
-        result = subprocess.run(  # noqa: S603
-            [str(binary), "--version"], check=True, capture_output=True, timeout=10
+        result = subprocess.run(
+            ["/usr/bin/env", "./soloist", "--version"],
+            cwd=staging,
+            check=True,
+            capture_output=True,
+            timeout=10,
         )
         if not re.match(
             rb"soloist [A-Za-z0-9][A-Za-z0-9.+-]{0,127}(?:\s|$)", result.stdout.strip()
@@ -84,15 +90,11 @@ def install_archive(archive: Path, destination: Path) -> None:
 def main() -> None:
     """Download a bounded archive and install it without root privileges."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--destination", type=Path)
-    args = parser.parse_args()
+    parser.parse_args()
     architecture = ARCHITECTURES.get(platform.machine())
     if architecture is None:
         parser.error("Spotify Soloist has no official build for this CPU.")
-    destination = args.destination or (
-        Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
-        / "quickspot"
-    )
+    destination = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "quickspot"
     url = f"https://soloist-builds.spotifycdn.com/soloist_release_{architecture}.tar.gz"
     opener = urllib.request.build_opener(SpotifyRedirectHandler())
     with tempfile.TemporaryDirectory(prefix="quickspot-download-") as work:

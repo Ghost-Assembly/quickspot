@@ -12,7 +12,7 @@ async function main() {
         await importCredentials(file);
         print('Imported Spotify credentials into GNOME Keyring.');
         exitCode = 0;
-    } catch (_error) {
+    } catch {
         printerr(
             'Credential import failed. Check the .env file and unlock GNOME Keyring.',
         );

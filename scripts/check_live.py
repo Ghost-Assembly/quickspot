@@ -13,12 +13,78 @@ UUID = "quickspot@napalm255.github.io"
 
 
 def command(
-    argv: list[str], environment: dict[str, str]
+    action: str,
+    environment: dict[str, str],
+    *,
+    working_directory: Path = ROOT,
+    fixture: Path | None = None,
 ) -> subprocess.CompletedProcess:
-    """Run a fixed GNOME test command with a bounded timeout."""
-    return subprocess.run(  # noqa: S603 -- test-controlled argv
-        argv, env=environment, check=True, capture_output=True, text=True, timeout=15
-    )
+    """Execute only the finite fixture command set, never a supplied command vector."""
+    options = {
+        "env": environment
+        if fixture is None
+        else environment
+        | {
+            "QUICKSPOT_TEST_EXTENSION": str(fixture),
+        },
+        "cwd": working_directory,
+        "check": True,
+        "capture_output": True,
+        "text": True,
+        "timeout": 15,
+    }
+    match action:
+        case "schemas":
+            return subprocess.run(["/usr/bin/glib-compile-schemas", "schemas"], **options)
+        case "allow-fixture":
+            return subprocess.run(
+                [
+                    "/usr/bin/gsettings",
+                    "set",
+                    "org.gnome.shell",
+                    "disable-user-extensions",
+                    "false",
+                ],
+                **options,
+            )
+        case "select-fixture":
+            return subprocess.run(
+                [
+                    "/usr/bin/gsettings",
+                    "set",
+                    "org.gnome.shell",
+                    "enabled-extensions",
+                    "['quickspot@napalm255.github.io']",
+                ],
+                **options,
+            )
+        case "get-enabled":
+            return subprocess.run(
+                ["/usr/bin/gsettings", "get", "org.gnome.shell", "enabled-extensions"], **options
+            )
+        case "disable":
+            return subprocess.run(
+                ["/usr/bin/gnome-extensions", "disable", "quickspot@napalm255.github.io"], **options
+            )
+        case "enable":
+            return subprocess.run(
+                ["/usr/bin/gnome-extensions", "enable", "quickspot@napalm255.github.io"], **options
+            )
+        case "info":
+            return subprocess.run(
+                ["/usr/bin/gnome-extensions", "info", "quickspot@napalm255.github.io"], **options
+            )
+        case "prefs":
+            return subprocess.run(["/usr/bin/gjs", "-m", "tests/prefs_smoke.js"], **options)
+        case "uninstall":
+            return subprocess.run(
+                ["/usr/bin/gnome-extensions", "uninstall", "quickspot@napalm255.github.io"],
+                **options,
+            )
+        case "list":
+            return subprocess.run(["/usr/bin/gnome-extensions", "list"], **options)
+        case _:
+            raise ValueError("Unsupported GNOME fixture command.")
 
 
 def wait_for(log: Path, marker: str, count: int, shell: subprocess.Popen) -> None:
@@ -71,9 +137,7 @@ def main() -> None:
                 extension / name,
                 ignore=shutil.ignore_patterns("__pycache__"),
             )
-        command(
-            ["/usr/bin/glib-compile-schemas", str(extension / "schemas")], environment
-        )
+        command("schemas", environment, working_directory=extension)
         bus = subprocess.Popen(
             ["/usr/bin/dbus-daemon", "--session", "--nofork", "--print-address"],
             env=environment,
@@ -87,30 +151,9 @@ def main() -> None:
             if bus.stdout is None:
                 raise RuntimeError("No D-Bus output.")
             environment["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().strip()
-            command(
-                [
-                    "/usr/bin/gsettings",
-                    "set",
-                    "org.gnome.shell",
-                    "disable-user-extensions",
-                    "false",
-                ],
-                environment,
-            )
-            command(
-                [
-                    "/usr/bin/gsettings",
-                    "set",
-                    "org.gnome.shell",
-                    "enabled-extensions",
-                    f"['{UUID}']",
-                ],
-                environment,
-            )
-            result = command(
-                ["/usr/bin/gsettings", "get", "org.gnome.shell", "enabled-extensions"],
-                environment,
-            )
+            command("allow-fixture", environment)
+            command("select-fixture", environment)
+            result = command("get-enabled", environment)
             if result.stdout.strip().splitlines()[-1] != f"['{UUID}']":
                 raise RuntimeError("GNOME settings are not isolated.")
             with log.open("w") as output:
@@ -130,47 +173,31 @@ def main() -> None:
                 wait_for(log, "[quickspot] enabled", 1, shell)
                 wait_for(log, "[quickspot-test] populated menu passed", 1, shell)
                 wait_for(log, "[quickspot-test] top bar metadata passed", 1, shell)
-                command(["/usr/bin/gnome-extensions", "disable", UUID], environment)
+                command("disable", environment)
                 wait_for(log, "[quickspot-test] teardown passed", 2, shell)
-                command(["/usr/bin/gnome-extensions", "enable", UUID], environment)
+                command("enable", environment)
                 wait_for(log, "[quickspot] enabled", 2, shell)
                 wait_for(log, "[quickspot-test] populated menu passed", 2, shell)
-                details = command(
-                    ["/usr/bin/gnome-extensions", "info", UUID], environment
-                )
+                details = command("info", environment)
                 if "State: ACTIVE" not in details.stdout:
                     raise RuntimeError("Extension is not active.")
                 environment["WAYLAND_DISPLAY"] = next(
                     (root / "run").glob("wayland-*"), Path("wayland-0")
                 ).name
-                result = command(
-                    [
-                        "/usr/bin/gjs",
-                        "-m",
-                        str(ROOT / "tests/prefs_smoke.js"),
-                        str(extension),
-                    ],
-                    environment,
-                )
+                result = command("prefs", environment, working_directory=ROOT, fixture=extension)
                 print(result.stdout.strip())
-                command(["/usr/bin/gnome-extensions", "disable", UUID], environment)
+                command("disable", environment)
                 wait_for(log, "[quickspot-test] teardown passed", 4, shell)
-                command(["/usr/bin/gnome-extensions", "uninstall", UUID], environment)
-                installed = command(["/usr/bin/gnome-extensions", "list"], environment)
+                command("uninstall", environment)
+                installed = command("list", environment)
                 if UUID in installed.stdout or extension.exists():
                     raise RuntimeError("Uninstall did not remove QuickSpot.")
             text = log.read_text(errors="replace")
-            if (
-                "JS ERROR" in text
-                or "had error" in text
-                or f"Extension {UUID}: Error:" in text
-            ):
+            if "JS ERROR" in text or "had error" in text or f"Extension {UUID}: Error:" in text:
                 raise RuntimeError("JavaScript error in isolated GNOME Shell.")
             print("PASS: failed startup rolls back panel, settings, and clients")
             print("PASS: populated playlist menus survive disable and re-enable")
-            print(
-                "PASS: accessible artist/song label appears in the top bar and clears"
-            )
+            print("PASS: accessible artist/song label appears in the top bar and clears")
             print("PASS: GNOME 50 enable, disable, re-enable, and final teardown")
             print("PASS: command-line uninstall removes QuickSpot from disk and GNOME")
         except (
@@ -178,9 +205,7 @@ def main() -> None:
             subprocess.CalledProcessError,
             subprocess.TimeoutExpired,
         ) as error:
-            if isinstance(
-                error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)
-            ):
+            if isinstance(error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
                 print(error.stdout)
                 print(error.stderr)
             text = log.read_text(errors="replace") if log.exists() else ""

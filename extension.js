@@ -74,9 +74,7 @@ export default class QuickSpotExtension extends Extension {
                 this._soloist.state.status === 'playing' ? 'pause' : 'play',
             ),
         );
-        this._next = this._action('Next', () =>
-            this._soloist.command('skip_next'),
-        );
+        this._next = this._action('Next', () => this._soloist.command('skip_next'));
         this._activate = this._action('Use this device', () =>
             this._soloist.command('activate'),
         );
@@ -118,9 +116,7 @@ export default class QuickSpotExtension extends Extension {
             this._shuffleItems.set(mode, item);
         }
         this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._shortcuts = new PopupMenu.PopupSubMenuMenuItem(
-            'Playlist shortcuts',
-        );
+        this._shortcuts = new PopupMenu.PopupSubMenuMenuItem('Playlist shortcuts');
         this._menu.addMenuItem(this._shortcuts);
         this._renderShortcuts();
         this._liked = this._action('Liked Songs', async () => {
@@ -142,11 +138,8 @@ export default class QuickSpotExtension extends Extension {
             try {
                 await player.refresh();
                 if (this._player !== player) return;
-                if (!player.presentation.canToggle)
-                    return this.openPreferences();
-                await player.control(
-                    player.presentation.running ? 'stop' : 'start',
-                );
+                if (!player.presentation.canToggle) return this.openPreferences();
+                await player.control(player.presentation.running ? 'stop' : 'start');
             } finally {
                 if (this._player === player) {
                     this._serviceBusy = false;
@@ -155,21 +148,17 @@ export default class QuickSpotExtension extends Extension {
             }
         });
         this._action('Open Spotify in browser', () =>
-            Gio.AppInfo.launch_default_for_uri(
-                'https://open.spotify.com/',
-                null,
-            ),
+            Gio.AppInfo.launch_default_for_uri('https://open.spotify.com/', null),
         );
         this._action('QuickSpot settings', () => this.openPreferences());
-        this._accountId = this._settings.connect(
-            'changed::account-generation',
-            () => {
-                this._spotify.destroy();
-                this._spotify = new SpotifyClient();
-                this._loading = false;
-                this._loadPlaylists();
-            },
-        );
+        this._accountId = this._settings.connect('changed::account-generation', () => {
+            this._spotify.destroy();
+            this._spotify = new SpotifyClient();
+            this._loading = false;
+            this._loadPlaylists().catch(() =>
+                console.warn('[quickspot] playlist menu update failed'),
+            );
+        });
         this._shortcutsId = this._settings.connect(
             'changed::playlist-shortcuts',
             () => {
@@ -180,7 +169,9 @@ export default class QuickSpotExtension extends Extension {
         Main.panel.addToStatusArea(this.uuid, this._button);
         this._player.start();
         this._sync();
-        this._loadPlaylists();
+        this._loadPlaylists().catch(() =>
+            console.warn('[quickspot] playlist menu update failed'),
+        );
         console.debug('[quickspot] enabled');
     }
 
@@ -250,9 +241,7 @@ export default class QuickSpotExtension extends Extension {
         const item = new PopupMenu.PopupMenuItem(playlist.name);
         item.setSensitive(this._soloist.state.loggedIn);
         item.connect('activate', () => {
-            void this._perform(() =>
-                this._soloist.command('play', playlist.uri),
-            );
+            void this._perform(() => this._soloist.command('play', playlist.uri));
         });
         return item;
     }
@@ -266,14 +255,9 @@ export default class QuickSpotExtension extends Extension {
             this._shortcutItems.push(item);
         }
         if (this._shortcutItems.length)
-            this._shortcuts.menu.addMenuItem(
-                new PopupMenu.PopupSeparatorMenuItem(),
-            );
+            this._shortcuts.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         const add = new PopupMenu.PopupMenuItem('Add playlist shortcut…');
-        add.connect(
-            'activate',
-            () => void this._perform(() => this.openPreferences()),
-        );
+        add.connect('activate', () => void this._perform(() => this.openPreferences()));
         this._shortcuts.menu.addMenuItem(add);
     }
 
@@ -287,8 +271,7 @@ export default class QuickSpotExtension extends Extension {
                 ? [state.artist, state.title].filter(Boolean).join(' — ')
                 : '';
         this._button.trackLabel.visible = Boolean(this._button.trackLabel.text);
-        this._button.accessible_name =
-            this._button.trackLabel.text || 'QuickSpot';
+        this._button.accessible_name = this._button.trackLabel.text || 'QuickSpot';
         this._play.label.text = state.status === 'playing' ? 'Pause' : 'Play';
         const mode = shuffleMode(state);
         const shuffleLabels = new Map([
@@ -307,15 +290,9 @@ export default class QuickSpotExtension extends Extension {
             );
             item.setSensitive(!this._shuffleBusy);
         }
-        for (const item of [
-            this._previous,
-            this._play,
-            this._next,
-            this._activate,
-        ])
+        for (const item of [this._previous, this._play, this._next, this._activate])
             item.setSensitive(state.loggedIn);
-        for (const item of this._shortcutItems ?? [])
-            item.setSensitive(state.loggedIn);
+        for (const item of this._shortcutItems ?? []) item.setSensitive(state.loggedIn);
         this._liked.setSensitive(state.loggedIn);
         this._togglePlayer.label.text = view.canToggle
             ? `${view.toggleLabel} player`
@@ -323,8 +300,7 @@ export default class QuickSpotExtension extends Extension {
         this._togglePlayer.setSensitive(
             !this._serviceBusy && !this._player.state.checking,
         );
-        for (const item of this._playlistItems ?? [])
-            item.setSensitive(state.loggedIn);
+        for (const item of this._playlistItems ?? []) item.setSensitive(state.loggedIn);
     }
 
     disable() {

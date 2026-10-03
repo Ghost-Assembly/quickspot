@@ -63,10 +63,7 @@ export class MprisBridge {
                 SupportedUriSchemes: ['spotify'],
                 SupportedMimeTypes: [],
             });
-            this._player = Gio.DBusExportedObject.wrapJSObject(
-                PLAYER_XML,
-                this,
-            );
+            this._player = Gio.DBusExportedObject.wrapJSObject(PLAYER_XML, this);
             this._root.export(this._bus, MPRIS_PATH);
             this._player.export(this._bus, MPRIS_PATH);
             this._owner = Gio.bus_own_name_on_connection(
@@ -122,10 +119,7 @@ export class MprisBridge {
             ),
             'xesam:url': new GLib.Variant('s', state.uri),
             'xesam:title': new GLib.Variant('s', state.title),
-            'xesam:artist': new GLib.Variant(
-                'as',
-                state.artist ? [state.artist] : [],
-            ),
+            'xesam:artist': new GLib.Variant('as', state.artist ? [state.artist] : []),
         };
     }
     get Volume() {
@@ -135,8 +129,7 @@ export class MprisBridge {
         return this._client.state.shuffle === true;
     }
     set Shuffle(value) {
-        if (typeof value !== 'boolean')
-            throw new Error('Invalid shuffle setting.');
+        if (typeof value !== 'boolean') throw new Error('Invalid shuffle setting.');
         void this._client.setShuffle(value).catch(() => {});
     }
     set Volume(value) {
@@ -147,11 +140,7 @@ export class MprisBridge {
     get Position() {
         const state = this._client.state;
         if (!state.active || !state.position) return 0;
-        const {
-            position_ms: anchor,
-            timestamp_ms: timestamp,
-            speed,
-        } = state.position;
+        const { position_ms: anchor, timestamp_ms: timestamp, speed } = state.position;
         const elapsed =
             state.status === 'playing'
                 ? Math.max(0, Date.now() - timestamp) * speed
@@ -164,8 +153,7 @@ export class MprisBridge {
         return 1;
     }
     set Rate(value) {
-        if (value !== 1)
-            throw new Error('Only normal playback speed is supported.');
+        if (value !== 1) throw new Error('Only normal playback speed is supported.');
     }
     get MinimumRate() {
         return 1;
@@ -180,9 +168,7 @@ export class MprisBridge {
         return this._client.state.loggedIn;
     }
     get CanPause() {
-        return (
-            this._client.state.active && this._client.state.status !== 'idle'
-        );
+        return this._client.state.active && this._client.state.status !== 'idle';
     }
     get CanGoNext() {
         return this.CanPause;
@@ -222,10 +208,7 @@ export class MprisBridge {
         this._command(invocation, 'skip_prev');
     }
     PlayPauseAsync(_args, invocation) {
-        this._command(
-            invocation,
-            this.PlaybackStatus === 'Playing' ? 'pause' : 'play',
-        );
+        this._command(invocation, this.PlaybackStatus === 'Playing' ? 'pause' : 'play');
     }
     OpenUriAsync([uri], invocation) {
         this._command(invocation, 'play', uri);

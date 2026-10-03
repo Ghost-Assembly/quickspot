@@ -74,8 +74,7 @@ export default class ShellSmoke extends QuickSpotExtension {
         this._sync();
         check(
             this._shuffle.label.text === 'Shuffle: Smart Shuffle' &&
-                this._shuffleItems.get('smart')._ornament ===
-                    PopupMenu.Ornament.NONE,
+                this._shuffleItems.get('smart')._ornament === PopupMenu.Ornament.NONE,
             'Smart Shuffle indicator did not follow player state.',
         );
         this._soloist.state.active = false;
@@ -104,15 +103,11 @@ export default class ShellSmoke extends QuickSpotExtension {
                 launched = true;
             };
             check(
-                this._shuffleItems.get('smart').label.text ===
-                    'About Smart Shuffle…',
+                this._shuffleItems.get('smart').label.text === 'About Smart Shuffle…',
                 'Smart Shuffle help was mislabeled as a playback action.',
             );
             this._shuffleItems.get('smart').activate(null);
-            check(
-                !launched,
-                'Smart Shuffle help opened an external application.',
-            );
+            check(!launched, 'Smart Shuffle help opened an external application.');
         } finally {
             Gio.AppInfo.launch_default_for_uri = launchUri;
         }
@@ -128,8 +123,7 @@ export default class ShellSmoke extends QuickSpotExtension {
         this._renderShortcuts();
         this._sync();
         check(
-            this._shortcutItems.length === 1 &&
-                !this._shortcutItems[0].sensitive,
+            this._shortcutItems.length === 1 && !this._shortcutItems[0].sensitive,
             'Unpaired speaker enabled manual playlist playback.',
         );
         this._soloist.state.loggedIn = true;
@@ -176,10 +170,7 @@ export default class ShellSmoke extends QuickSpotExtension {
             );
         await loading;
         if (!this._button) return;
-        check(
-            this._playlistItems.length === 2,
-            'Playlist menu did not populate.',
-        );
+        check(this._playlistItems.length === 2, 'Playlist menu did not populate.');
         console.debug('[quickspot-test] populated menu passed');
     }
 

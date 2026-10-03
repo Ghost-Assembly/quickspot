@@ -10,17 +10,12 @@
 // tests/docs.config.js.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 import config from './docs.config.js';
-
-const METADATA = fileURLToPath(new URL('../metadata.json', import.meta.url));
-// METADATA is a module-relative constant, not input of any kind.
-// eslint-disable-next-line security/detect-non-literal-fs-filename
-const metadata = JSON.parse(readFileSync(METADATA, 'utf8'));
+import metadata from '../metadata.json' with { type: 'json' };
 
 const { site, repo, title, sections } = config;
 
@@ -31,16 +26,15 @@ test('loads every asset from its own origin, without errors', async ({
     baseURL,
 }) => {
     const problems = [];
-    page.on('console', (msg) => {
+    page.on('console', msg => {
         if (msg.type() === 'error') problems.push(`console: ${msg.text()}`);
     });
-    page.on('pageerror', (err) => problems.push(`pageerror: ${err.message}`));
-    page.on('requestfailed', (req) => problems.push(`failed: ${req.url()}`));
-    page.on('request', (req) => {
-        if (!req.url().startsWith(baseURL))
-            problems.push(`external: ${req.url()}`);
+    page.on('pageerror', err => problems.push(`pageerror: ${err.message}`));
+    page.on('requestfailed', req => problems.push(`failed: ${req.url()}`));
+    page.on('request', req => {
+        if (!req.url().startsWith(baseURL)) problems.push(`external: ${req.url()}`);
     });
-    page.on('response', (res) => {
+    page.on('response', res => {
         if (res.status() >= 400) problems.push(`${res.status()}: ${res.url()}`);
     });
 
@@ -70,27 +64,19 @@ test('images and social metadata resolve', async ({ page, request }) => {
 
     const broken = await page
         .locator('img')
-        .evaluateAll((imgs) =>
-            imgs.filter((i) => !i.naturalWidth).map((i) => i.src),
-        );
+        .evaluateAll(imgs => imgs.filter(i => !i.naturalWidth).map(i => i.src));
     expect(broken).toEqual([]);
 
     // Absolute URLs point at production; check the same file locally.
-    const og = await page
-        .locator('meta[property="og:image"]')
-        .getAttribute('content');
+    const og = await page.locator('meta[property="og:image"]').getAttribute('content');
     expect(og.startsWith(site)).toBe(true);
     expect((await request.get(og.slice(site.length))).status()).toBe(200);
 
-    const url = await page
-        .locator('meta[property="og:url"]')
-        .getAttribute('content');
+    const url = await page.locator('meta[property="og:url"]').getAttribute('content');
     expect(url).toBe(site);
 
     for (const rel of ['icon', 'apple-touch-icon']) {
-        const href = await page
-            .locator(`link[rel="${rel}"]`)
-            .getAttribute('href');
+        const href = await page.locator(`link[rel="${rel}"]`).getAttribute('href');
         expect((await request.get(href)).status(), rel).toBe(200);
     }
 });
@@ -116,10 +102,8 @@ test.describe('agrees with metadata.json', () => {
     test('installs the real uuid', async ({ page }) => {
         await page.goto('/');
         const install = page.locator('#install');
-        await expect(install).toContainText(
-            `${metadata.uuid}.shell-extension.zip`,
-        );
-        await expect(install).toContainText('just enable');
+        await expect(install).toContainText(`${metadata.uuid}.shell-extension.zip`);
+        await expect(install).toContainText(`gnome-extensions enable ${metadata.uuid}`);
     });
 
     test('names the supported GNOME versions', async ({ page }) => {
@@ -129,9 +113,7 @@ test.describe('agrees with metadata.json', () => {
             versions.length === 1
                 ? versions[0]
                 : `${versions[0]}–${versions[versions.length - 1]}`;
-        await expect(page.locator('.chips')).toContainText(
-            `GNOME Shell ${range}`,
-        );
+        await expect(page.locator('.chips')).toContainText(`GNOME Shell ${range}`);
     });
 
     test('shows the current version', async ({ page }) => {
@@ -153,40 +135,32 @@ test.describe('agrees with metadata.json', () => {
 // what the extension does not do. What that means is particular to each
 // project, so docs.config.js supplies the checks, when it has any.
 if (config.drawing) {
-    test('draws only what the extension shows', async ({ page }, testInfo) => {
+    test('draws only what the extension shows', async ({ page }) => {
         await page.goto('/');
+        await expect(page.locator('figure.shot')).toBeVisible();
         await config.drawing(page.locator('figure.shot'), expect);
-        await page
-            .locator('.hero')
-            .screenshot({ path: testInfo.outputPath('hero.png') });
     });
 }
 
-test('numbers the sections in the order the contents list gives', async ({
-    page,
-}) => {
+test('numbers the sections in the order the contents list gives', async ({ page }) => {
     await page.goto('/');
 
     const found = await page
         .locator('main .section')
-        .evaluateAll((els) =>
-            els.map((el) => [
+        .evaluateAll(els =>
+            els.map(el => [
                 el.id,
                 el.querySelector('h2').textContent.trim(),
                 el.querySelector('.kicker').textContent.trim(),
             ]),
         );
     expect(found).toEqual(
-        sections.map(([id, title], i) => [
-            id,
-            title,
-            String(i + 1).padStart(2, '0'),
-        ]),
+        sections.map(([id, title], i) => [id, title, String(i + 1).padStart(2, '0')]),
     );
 
     const listed = await page
         .locator('nav.toc ol a')
-        .evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+        .evaluateAll(as => as.map(a => a.getAttribute('href')));
     expect(listed).toEqual(sections.map(([id]) => `#${id}`));
 });
 
@@ -194,24 +168,17 @@ test('numbers the sections in the order the contents list gives', async ({
 // docs.config.js opts out with `readmeLinks: false` while the README has none.
 if (config.readmeLinks !== false) {
     test('keeps the ids README.md links to', async ({ page }) => {
-        const README = fileURLToPath(new URL('../README.md', import.meta.url));
-        // README is a module-relative constant, not input of any kind.
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const readme = readFileSync(README, 'utf8');
-        // The site's URL without its scheme, as a literal: a README may link
-        // with or without https://.
-        const host = site
-            .replace(/^https?:\/\//, '')
-            .replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&');
-        // Built from docs.config.js, a module-relative constant, not input.
-        // eslint-disable-next-line security/detect-non-literal-regexp
-        const pattern = new RegExp(`${host}#([\\w-]+)`, 'g');
-        const ids = [...readme.matchAll(pattern)].map((match) => match[1]);
+        // Playwright runs from the repository root, as configured by just.
+        const readme = readFileSync('README.md', 'utf8');
+        const host = site.replace(/^https?:\/\//, '');
+        const ids = [...readme.matchAll(/\]\(([^)\s]+)\)/g)]
+            .map(match => match[1])
+            .filter(link => link.startsWith(site + '#') || link.startsWith(host + '#'))
+            .map(link => link.split('#')[1]);
         expect(ids.length).toBeGreaterThan(0);
 
         await page.goto('/');
-        for (const id of ids)
-            await expect(page.locator(`#${id}`), id).toHaveCount(1);
+        for (const id of ids) await expect(page.locator(`#${id}`), id).toHaveCount(1);
     });
 }
 
@@ -219,9 +186,7 @@ test('in-page links land on real targets', async ({ page }) => {
     await page.goto('/');
     const targets = await page
         .locator('a[href^="#"]')
-        .evaluateAll((as) => [
-            ...new Set(as.map((a) => a.getAttribute('href'))),
-        ]);
+        .evaluateAll(as => [...new Set(as.map(a => a.getAttribute('href')))]);
     expect(targets.length).toBeGreaterThan(0);
     for (const target of targets)
         await expect(page.locator(target), target).toHaveCount(1);
@@ -240,27 +205,32 @@ test.describe('contents list', () => {
     test('is a sticky sidebar on a desktop', async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('nav.toc')).toBeVisible();
-        await expect(page.locator('details.toc-m')).toBeHidden();
+        await expect(page.locator('.toc-controls')).toBeHidden();
+        await expect(page.locator('nav.toc')).toHaveCount(1);
 
         await page.locator(`#${sections.at(-1)[0]}`).scrollIntoViewIfNeeded();
         await expect(page.locator('nav.toc')).toBeInViewport();
     });
 
-    test('folds into a disclosure on a phone', async ({ page }) => {
+    test('expands the same contents list by keyboard on a phone', async ({ page }) => {
         await page.setViewportSize(phone);
         await page.goto('/');
         await expect(page.locator('nav.toc')).toBeHidden();
 
-        const details = page.locator('details.toc-m');
-        await expect(details).toBeVisible();
+        const toggle = page.getByRole('checkbox', { name: 'On this page' });
+        await expect(toggle).toBeVisible();
+        await expect(toggle).not.toBeChecked();
+        await toggle.focus();
+        await page.keyboard.press('Space');
+        await expect(toggle).toBeChecked();
         await expect(
-            details.getByRole('link', { name: /Install/ }),
-        ).toBeHidden();
-
-        await details.locator('summary').click();
-        await expect(
-            details.getByRole('link', { name: /Install/ }),
+            page.locator('nav.toc').getByRole('link', { name: /Install/ }),
         ).toBeVisible();
+        await page.keyboard.press('Tab');
+        await expect(page.locator('nav.toc a').first()).toBeFocused();
+        await toggle.focus();
+        await page.keyboard.press('Space');
+        await expect(page.locator('nav.toc')).toBeHidden();
     });
 });
 
@@ -272,9 +242,7 @@ for (const colorScheme of ['dark', 'light']) {
             ['desktop', null],
             ['phone', phone],
         ]) {
-            test(`has no accessibility violations on a ${label}`, async ({
-                page,
-            }) => {
+            test(`has no accessibility violations on a ${label}`, async ({ page }) => {
                 if (viewport) await page.setViewportSize(viewport);
                 await page.goto('/');
                 await page.evaluate(() => document.fonts.ready);
@@ -287,13 +255,11 @@ for (const colorScheme of ['dark', 'light']) {
                         'best-practice',
                     ])
                     .analyze();
-                expect(violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+                expect(violations.map(v => `${v.id}: ${v.help}`)).toEqual([]);
             });
         }
 
-        test('fits a 360px phone without sideways scrolling', async ({
-            page,
-        }) => {
+        test('fits a 360px phone without sideways scrolling', async ({ page }) => {
             await page.setViewportSize({ width: 360, height: 800 });
             await page.goto('/');
             const overflow = await page.evaluate(
@@ -313,15 +279,12 @@ for (const colorScheme of ['dark', 'light']) {
                 const [ink, background] = await page
                     .locator(selector)
                     .first()
-                    .evaluate((el) => {
+                    .evaluate(el => {
                         const style = getComputedStyle(el.closest('.night'));
                         return [style.color, style.backgroundColor];
                     });
                 expect(ink, selector).toBe('rgb(236, 238, 242)');
-                const channels = background
-                    .match(/\d+/g)
-                    .slice(0, 3)
-                    .map(Number);
+                const channels = background.match(/\d+/g).slice(0, 3).map(Number);
                 expect(Math.max(...channels), selector).toBeLessThan(16);
             }
         });
@@ -341,9 +304,7 @@ test('follows the reader into the light scheme', async ({ browser }) => {
 
 test('the halo breathes when motion is allowed', async ({ page }) => {
     await page.goto('/');
-    const animations = await page.evaluate(
-        () => document.getAnimations().length,
-    );
+    const animations = await page.evaluate(() => document.getAnimations().length);
     expect(animations).toBeGreaterThan(0);
 });
 
@@ -352,9 +313,7 @@ test.describe('reduced motion', () => {
 
     test('nothing animates', async ({ page }) => {
         await page.goto('/');
-        const animations = await page.evaluate(
-            () => document.getAnimations().length,
-        );
+        const animations = await page.evaluate(() => document.getAnimations().length);
         expect(animations).toBe(0);
     });
 });

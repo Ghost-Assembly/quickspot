@@ -1,0 +1,24 @@
+{
+  "$schema": "quick-project.schema.json",
+  "runtimeFiles": [
+    "metadata.json",
+    "extension.js",
+    "prefs.js",
+    "stylesheet.css",
+    "LICENSE",
+    "schemas/org.gnome.shell.extensions.quickspot.gschema.xml",
+    "modules/model.js",
+    "modules/shortcuts.js",
+    "modules/mpris.js",
+    "modules/platform.js",
+    "modules/player.js",
+    "modules/credentials.js",
+    "modules/secrets.js",
+    "modules/soloist.js",
+    "modules/spotify.js",
+    "scripts/install_soloist.py",
+    "scripts/soloist-runner.js"
+  ],
+  "docsPort": 8324,
+  "nativeTests": true
+}

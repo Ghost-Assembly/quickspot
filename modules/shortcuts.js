@@ -3,9 +3,7 @@ import GLib from 'gi://GLib';
 import { playlistShortcuts } from './model.js';
 
 export function readShortcuts(settings) {
-    return playlistShortcuts(
-        settings.get_value('playlist-shortcuts').deep_unpack(),
-    );
+    return playlistShortcuts(settings.get_value('playlist-shortcuts').deep_unpack());
 }
 
 export function writeShortcuts(settings, playlists) {

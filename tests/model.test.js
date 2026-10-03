@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { test } from 'vitest';
 import {
     playlistUri,
     playlistPage,
@@ -43,9 +43,7 @@ test('shuffle follows player options and distinguishes Smart Shuffle', () => {
     });
     assert.equal(shuffleMode(state), 'smart');
     assert.equal(
-        shuffleMode(
-            playbackEvent(state, { type: 'auth_state', logged_in: false }),
-        ),
+        shuffleMode(playbackEvent(state, { type: 'auth_state', logged_in: false })),
         'unknown',
     );
     assert.throws(() =>
@@ -66,17 +64,9 @@ test('manual shortcuts accept playlist IDs and validate names and destinations',
         name: 'Discover Weekly',
         uri,
     });
-    for (const name of [
-        '',
-        '   ',
-        null,
-        'x'.repeat(101),
-        'name\nwith controls',
-    ])
+    for (const name of ['', '   ', null, 'x'.repeat(101), 'name\nwith controls'])
         assert.throws(() => playlistShortcut(name, id));
-    assert.throws(() =>
-        playlistShortcut('Weekly', 'https://example.com/playlist'),
-    );
+    assert.throws(() => playlistShortcut('Weekly', 'https://example.com/playlist'));
     assert.deepEqual(
         playlistShortcuts([
             ['First name', id],
@@ -158,10 +148,7 @@ test('malformed tokens require reconnecting', () => {
     for (const value of [null, {}, { access: '', refresh: 'r', expires: 10 }])
         assert.throws(() => savedToken(value));
     assert.throws(() =>
-        tokenRecord(
-            { access_token: 'a', token_type: 'Bearer', expires_in: -1 },
-            'r',
-        ),
+        tokenRecord({ access_token: 'a', token_type: 'Bearer', expires_in: -1 }, 'r'),
     );
 });
 
@@ -219,9 +206,7 @@ test('pausing keeps metadata and logging out clears it', () => {
 
 test('invalid playback updates fail without changing the prior state', () => {
     const state = { volume: 50 };
-    assert.throws(() =>
-        playbackEvent(state, { type: 'volume_changed', volume: 101 }),
-    );
+    assert.throws(() => playbackEvent(state, { type: 'volume_changed', volume: 101 }));
     assert.deepEqual(state, { volume: 50 });
 });
 
@@ -242,6 +227,17 @@ test('credential import treats shell syntax as literal text', () => {
     );
     assert.equal(values.get('SPOTIFY_CLIENT_ID'), 'example');
     assert.equal(values.get('SPOTIFY_SOLOIST_KEY'), '$(touch /tmp/no)');
+    assert.equal(
+        parseEnvironment('export\tSPOTIFY_SOLOIST_KEY = "literal=a=b"   ').get(
+            'SPOTIFY_SOLOIST_KEY',
+        ),
+        'literal=a=b',
+    );
+    assert.equal(parseEnvironment('NOT A KEY=value').size, 0);
+    assert.equal(
+        parseEnvironment('KEY=' + ' '.repeat(60000) + 'value').get('KEY'),
+        'value',
+    );
     assert.throws(() => parseEnvironment('x'.repeat(65537)));
 });
 
@@ -280,13 +276,11 @@ test('player setup distinguishes installation, startup failure, API readiness, a
     };
     const playback = { connected: false, loggedIn: false };
     assert.equal(
-        playerPresentation({ ...setup, installed: false }, playback)
-            .installLabel,
+        playerPresentation({ ...setup, installed: false }, playback).installLabel,
         'Install',
     );
     assert.equal(
-        playerPresentation({ ...setup, serviceLoaded: false }, playback)
-            .installLabel,
+        playerPresentation({ ...setup, serviceLoaded: false }, playback).installLabel,
         'Repair',
     );
     assert.equal(
@@ -296,10 +290,7 @@ test('player setup distinguishes installation, startup failure, API readiness, a
     assert.equal(playerPresentation(setup, playback).toggleLabel, 'Start');
     const running = { ...setup, activeState: 'active' };
     assert.equal(playerPresentation(running, playback).toggleLabel, 'Stop');
-    assert.match(
-        playerPresentation(running, playback).title,
-        /connection pending/,
-    );
+    assert.match(playerPresentation(running, playback).title, /connection pending/);
     assert.equal(
         playerPresentation(running, { ...playback, connected: true }).title,
         'Ready to pair',

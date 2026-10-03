@@ -18,6 +18,18 @@ spec.loader.exec_module(installer)
 
 
 class ArchiveTests(unittest.TestCase):
+    def test_relative_and_symlink_destinations_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            target = root / "target"
+            target.mkdir()
+            alias = root / "alias"
+            alias.symlink_to(target, target_is_directory=True)
+            for destination in [Path("relative"), root / "nested/../target", alias]:
+                with self.subTest(destination=destination), self.assertRaises(ValueError):
+                    installer.install_archive(root / "missing.tar.gz", destination)
+            self.assertEqual(list(target.iterdir()), [])
+
     def archive(self, root: Path, members: list[tuple[str, bytes]]) -> Path:
         archive = root / "archive.tar.gz"
         with tarfile.open(archive, "w:gz") as bundle:
@@ -72,8 +84,7 @@ class ArchiveTests(unittest.TestCase):
             destination.mkdir()
             (destination / "soloist").write_bytes(b"existing")
             contents = (
-                b"#!/bin/sh\n"
-                b"printf 'soloist 1.2.3 build 1 (20260101) (gabc) (linux/x86_64)\\n'\n"
+                b"#!/bin/sh\nprintf 'soloist 1.2.3 build 1 (20260101) (gabc) (linux/x86_64)\\n'\n"
             )
             archive = self.archive(
                 root,
@@ -135,9 +146,7 @@ class ArchiveTests(unittest.TestCase):
 class DownloadTests(unittest.TestCase):
     def test_redirects_stay_on_the_official_https_origin(self) -> None:
         handler = installer.SpotifyRedirectHandler()
-        request = installer.urllib.request.Request(
-            "https://soloist-builds.spotifycdn.com/original"
-        )
+        request = installer.urllib.request.Request("https://soloist-builds.spotifycdn.com/original")
         for url in [
             "http://soloist-builds.spotifycdn.com/player.tar.gz",
             "https://example.com/player.tar.gz",
