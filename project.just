@@ -11,9 +11,9 @@ import-credentials:
     /usr/bin/gjs -m scripts/import-credentials.js .env
 
 
-# Project-specific offline integration tests
+# Python test discovery runs native integrations and records their coverage.
 test-extra:
-    python3 scripts/run_native.py
+    @true
 
 # Isolated GNOME lifecycle test
 live-check:
