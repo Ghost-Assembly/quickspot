@@ -1,6 +1,8 @@
 """Native integrations and isolated GNOME command boundary regressions."""
 
 import importlib.util
+import io
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +25,54 @@ live = load("check_live")
 
 
 class NativeTests(unittest.TestCase):
+    def test_isolated_lifecycle_orchestration_releases_processes_on_success_and_failure(
+        self,
+    ) -> None:
+        for failure in [False, True]:
+            bus = Mock()
+            bus.stdout.readline.return_value = "unix:fixture-private-bus\n"
+            shell = Mock()
+            shell.poll.return_value = None
+
+            def command(action: str, environment: dict[str, str], **_kwargs):
+                runtime = Path(environment["XDG_RUNTIME_DIR"])
+                self.assertEqual(runtime.stat().st_mode & 0o777, 0o700)
+                if action != "schemas":
+                    self.assertEqual(
+                        environment["DBUS_SESSION_BUS_ADDRESS"], "unix:fixture-private-bus"
+                    )
+                if action == "get-enabled":
+                    return Mock(stdout=f"['{live.UUID}']")
+                if action == "info":
+                    return Mock(stdout="State: ACTIVE")
+                if action == "uninstall":
+                    installed = (
+                        Path(environment["XDG_DATA_HOME"]) / "gnome-shell/extensions" / live.UUID
+                    )
+                    shutil.rmtree(installed)
+                return Mock(stdout="")
+
+            with (
+                self.subTest(failure=failure),
+                patch.object(live.subprocess, "Popen", side_effect=[bus, shell]),
+                patch.object(live, "command", side_effect=command),
+                patch.object(
+                    live,
+                    "wait_for",
+                    side_effect=RuntimeError("fixture failure") if failure else None,
+                ),
+                patch("sys.stdout", new=io.StringIO()),
+            ):
+                if failure:
+                    with self.assertRaisesRegex(RuntimeError, "fixture failure"):
+                        live.main()
+                else:
+                    live.main()
+            shell.terminate.assert_called_once()
+            shell.wait.assert_called_once_with(timeout=10)
+            bus.terminate.assert_called_once()
+            bus.wait.assert_called_once_with(timeout=10)
+
     def test_coverage_preserves_counts_and_rejects_foreign_source_paths(self) -> None:
         report = (
             "SF:/fixture/modules/player.js\nDA:7,3\nBRDA:7,0,0,2\nend_of_record\n"
