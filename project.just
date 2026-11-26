@@ -16,7 +16,7 @@ test-extra:
     @true
 
 # Isolated GNOME lifecycle test
-live-check:
+live-check: build
     python3 scripts/check_live.py
 
 # Additional integration checks
