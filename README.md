@@ -7,7 +7,7 @@
 [![Docs](https://img.shields.io/website?url=https%3A%2F%2Fghost-assembly.com%2Fquickspot%2F&label=docs)](https://ghost-assembly.com/quickspot/)
 [![Release](https://img.shields.io/github/v/release/Ghost-Assembly/quickspot)](https://github.com/Ghost-Assembly/quickspot/releases/latest)
 [![License](https://img.shields.io/github/license/Ghost-Assembly/quickspot)](https://github.com/Ghost-Assembly/quickspot/blob/main/LICENSE)
-[![GNOME](https://img.shields.io/badge/GNOME-50-blue)](https://ghost-assembly.com/quickspot/#install)
+[![GNOME](https://img.shields.io/badge/GNOME-50%20%7C%2051-blue)](https://ghost-assembly.com/quickspot/#install)
 [![Security issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dsoftware_quality_security_issues&query=%24.component.measures%5B0%5D.value&label=Security+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
 [![Reliability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dsoftware_quality_reliability_issues&query=%24.component.measures%5B0%5D.value&label=Reliability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
 [![Maintainability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quickspot%26metricKeys%3Dsoftware_quality_maintainability_issues&query=%24.component.measures%5B0%5D.value&label=Maintainability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
@@ -16,7 +16,7 @@
 [![Sonar policy](https://github.com/Ghost-Assembly/quickspot/actions/workflows/sonar.yml/badge.svg?branch=main)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quickspot)
 <!-- quick-template:badges:end -->
 
-A Spotify speaker and playback controls for **GNOME Shell 50**, powered by
+A Spotify speaker and playback controls for **GNOME Shell 50 and 51**, powered by
 [Spotify Soloist](https://developer.spotify.com/documentation/soloist). Part of
 [Ghost Assembly](https://github.com/Ghost-Assembly).
 
@@ -35,7 +35,7 @@ architecture, testing, and packaging.
 
 ## Requirements
 
-- GNOME Shell 50 with GJS, libsecret, libsoup 3, GTK 4, and libadwaita.
+- GNOME Shell 50 or 51 with GJS, libsecret, libsoup 3, GTK 4, and libadwaita.
 - Python 3.12 or newer, a graphical systemd user session, and PipeWire or PulseAudio.
 - A Spotify Premium account and your own Soloist API key.
 - An x86_64, aarch64, or armv7l Linux system for the official Soloist download.
@@ -149,7 +149,7 @@ in QuickSpot's bundle.
 
 <!-- quick-template:install:start -->
 
-Requires GNOME Shell 50. Requires GJS, libsecret, libsoup 3, GTK 4, libadwaita, Python 3.12 or newer, a graphical systemd user session, PipeWire or PulseAudio, Spotify Premium, and your own Soloist API key. Official Soloist downloads support x86_64, aarch64, and armv7l Linux.
+Requires GNOME Shell 50 or 51. Requires GJS, libsecret, libsoup 3, GTK 4, libadwaita, Python 3.12 or newer, a graphical systemd user session, PipeWire or PulseAudio, Spotify Premium, and your own Soloist API key. Official Soloist downloads support x86_64, aarch64, and armv7l Linux.
 
 ### From a release
 

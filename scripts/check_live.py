@@ -198,7 +198,7 @@ def main() -> None:
             print("PASS: failed startup rolls back panel, settings, and clients")
             print("PASS: populated playlist menus survive disable and re-enable")
             print("PASS: accessible artist/song label appears in the top bar and clears")
-            print("PASS: GNOME 50 enable, disable, re-enable, and final teardown")
+            print("PASS: GNOME Shell enable, disable, re-enable, and final teardown")
             print("PASS: command-line uninstall removes QuickSpot from disk and GNOME")
         except (
             RuntimeError,
