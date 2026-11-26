@@ -1,6 +1,6 @@
 # QuickSpot engineering instructions
 
-QuickSpot is a GNOME Shell 50 extension with a separate Spotify Soloist systemd
+QuickSpot is a GNOME Shell extension with a separate Spotify Soloist systemd
 user service. Use native GJS ES modules; keep GNOME Shell and GTK preferences
 imports in their respective processes. Do not add a transpilation layer or npm
 runtime dependencies without a concrete requirement.
