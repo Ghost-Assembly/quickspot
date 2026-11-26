@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 UUID = "quickspot@napalm255.github.io"
+PACKAGE = ROOT / f"{UUID}.shell-extension.zip"
 
 
 def command(
@@ -130,7 +131,7 @@ def main() -> None:
         extension.mkdir(parents=True)
         # Install the package `just build` made, not the source tree, so a runtime
         # file the package leaves out fails here exactly as it would for a user.
-        with zipfile.ZipFile(ROOT / f"{UUID}.shell-extension.zip") as package:
+        with zipfile.ZipFile(PACKAGE) as package:
             package.extractall(extension)
         (extension / "extension.js").rename(extension / "quickspot.js")
         shutil.copy2(ROOT / "tests/shell_smoke.js", extension / "extension.js")

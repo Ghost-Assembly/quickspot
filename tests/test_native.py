@@ -5,6 +5,7 @@ import io
 import shutil
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -28,6 +29,13 @@ class NativeTests(unittest.TestCase):
     def test_isolated_lifecycle_orchestration_releases_processes_on_success_and_failure(
         self,
     ) -> None:
+        work = tempfile.TemporaryDirectory()
+        self.addCleanup(work.cleanup)
+        package = Path(work.name) / "package.zip"
+        with zipfile.ZipFile(package, "w") as archive:
+            archive.writestr("metadata.json", "{}")
+            archive.writestr("extension.js", "export default class {}")
+        self.enterContext(patch.object(live, "PACKAGE", package))
         for failure in [False, True]:
             bus = Mock()
             bus.stdout.readline.return_value = "unix:fixture-private-bus\n"
