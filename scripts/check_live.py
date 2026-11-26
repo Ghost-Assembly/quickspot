@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -127,16 +128,12 @@ def main() -> None:
             Path(environment[key]).mkdir(mode=0o700)
         extension = root / "data/gnome-shell/extensions" / UUID
         extension.mkdir(parents=True)
-        for name in ["metadata.json", "extension.js", "prefs.js", "stylesheet.css"]:
-            shutil.copy2(ROOT / name, extension / name)
+        # Install the package `just build` made, not the source tree, so a runtime
+        # file the package leaves out fails here exactly as it would for a user.
+        with zipfile.ZipFile(ROOT / f"{UUID}.shell-extension.zip") as package:
+            package.extractall(extension)
         (extension / "extension.js").rename(extension / "quickspot.js")
         shutil.copy2(ROOT / "tests/shell_smoke.js", extension / "extension.js")
-        for name in ["modules", "scripts", "schemas"]:
-            shutil.copytree(
-                ROOT / name,
-                extension / name,
-                ignore=shutil.ignore_patterns("__pycache__"),
-            )
         command("schemas", environment, working_directory=extension)
         bus = subprocess.Popen(
             ["/usr/bin/dbus-daemon", "--session", "--nofork", "--print-address"],
